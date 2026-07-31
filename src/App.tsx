@@ -237,7 +237,7 @@ export default function App() {
       category: newPost.category,
       type: newPost.type,
       mediaUrl: newPost.mediaUrl,
-      duration: newPost.duration,
+      ...(newPost.duration ? { duration: newPost.duration } : {}),
       caption: newPost.caption,
       hashtags: newPost.hashtags,
     });

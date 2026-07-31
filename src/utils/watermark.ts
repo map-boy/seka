@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sekaa Real Canvas Watermarking Engine & Export Utility
  * Handles client-side canvas compositing of text, stickers, and the official Sekaa watermark stamp.
  */
@@ -135,7 +135,7 @@ export function stampSekaaWatermark(ctx: CanvasRenderingContext2D, width: number
 
  // Coral Bolt Symbol
  ctx.fillStyle = '#FF3366';
- ctx.fillText('', textX, textY);
+ ctx.fillText('⚡', textX, textY);
 
  // Sekaa Wordmark
  const boltWidth = Math.floor(badgeHeight * 0.45);
@@ -157,4 +157,5 @@ export function triggerFileDownload(dataUrl: string, filename = 'sekaa-meme.png'
  link.click();
  document.body.removeChild(link);
 }
+
 

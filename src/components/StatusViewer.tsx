@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { X, Eye, Zap, MessageSquare } from 'lucide-react';
 import { StatusItem } from '../types';
 
@@ -87,7 +87,7 @@ export const StatusViewer: React.FC<StatusViewerProps> = ({
 
  {/* Permanent Sekaa Watermark Badge (bottom-right of media) */}
  <div className="absolute bottom-20 right-4 bg-[#0A0A0A]/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#E6FF00]/40 flex items-center space-x-1 shadow-lg">
- <span className="text-[#FF3366] text-sm font-black"></span>
+ <span className="text-[#FF3366] text-sm font-black">⚡</span>
  <span className="text-xs font-black text-white">Sekaa</span>
  </div>
  </div>
@@ -139,4 +139,5 @@ export const StatusViewer: React.FC<StatusViewerProps> = ({
  </div>
  );
 };
+
 

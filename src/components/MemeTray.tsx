@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Search, Bookmark, Flame } from 'lucide-react';
 import { MemePost } from '../types';
 
@@ -117,7 +117,7 @@ export const MemeTray: React.FC<MemeTrayProps> = ({
  />
  {/* Sekaa Watermark Badge on thumbnail */}
  <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-xs px-1.5 py-0.5 rounded-full border border-[#E6FF00]/40 flex items-center space-x-0.5 pointer-events-none">
- <span className="text-[#FF3366] text-[9px] font-black"></span>
+ <span className="text-[#FF3366] text-[9px] font-black">⚡</span>
  <span className="text-[8px] font-bold text-white">Sekaa</span>
  </div>
  </div>
@@ -129,4 +129,5 @@ export const MemeTray: React.FC<MemeTrayProps> = ({
  </div>
  );
 };
+
 

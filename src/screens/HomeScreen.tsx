@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Header } from '../components/Header';
 import { StatusRingRow } from '../components/StatusRingRow';
 import { MemeCard } from '../components/MemeCard';
@@ -57,9 +57,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
  if (subTab === 'following' && !meme.creator.isFollowing && !meme.isMine) {
  return false;
  }
- if (subTab === 'trending' && meme.likes + meme.shares < 10000) {
- return false;
- }
+ // handled below via ranked slice, not a per-item filter
 
  // 2. Category filter
  if (selectedCategory !== 'All' && selectedCategory !== 'For You' && meme.category !== selectedCategory) {
@@ -77,6 +75,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
  return true;
  });
+
+ // For Trending: show the top 20 memes by (likes + shares*2), not an absolute cutoff
+ const displayedMemes = subTab === 'trending'
+ ? [...filteredMemes].sort((a, b) => (b.likes + b.shares * 2) - (a.likes + a.shares * 2)).slice(0, 20)
+ : filteredMemes;
 
  return (
  <div className="pb-24">
@@ -150,9 +153,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
  {/* Meme Feed */}
  <main className="p-4 max-w-lg mx-auto">
- {filteredMemes.length === 0 ? (
+ {displayedMemes.length === 0 ? (
  <div className="text-center py-16 space-y-3">
- <span className="text-4xl"></span>
+ <span className="text-4xl">🙁</span>
  <p className="text-sm font-bold text-[#A1A1AA]">No memes found in this tab.</p>
  <button
  onClick={() => {
@@ -166,7 +169,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
  </button>
  </div>
  ) : (
- filteredMemes.map((meme) => (
+ displayedMemes.map((meme) => (
  <MemeCard
  key={meme.id}
  meme={meme}
@@ -184,4 +187,5 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
  </div>
  );
 };
+
 

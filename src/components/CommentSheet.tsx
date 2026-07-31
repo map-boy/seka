@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Send, Heart } from 'lucide-react';
 import { MemePost, Comment } from '../types';
 import { CURRENT_USER } from '../data/mockData';
@@ -11,7 +11,7 @@ interface CommentSheetProps {
  onClose: () => void;
 }
 
-const QUICK_EMOJIS = ['', '', '', 'ðŸŽ¯', '', ''];
+const QUICK_EMOJIS = ['🔥', '😂', '💀', '🎯', '👑', '💯'];
 
 export const CommentSheet: React.FC<CommentSheetProps> = ({
  meme,
@@ -61,7 +61,7 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
  <div className="flex-1 overflow-y-auto p-4 space-y-4">
  {memeComments.length === 0 ? (
  <div className="text-center py-8 space-y-2">
- <span className="text-3xl">ðŸ’¬</span>
+ <span className="text-3xl">💬</span>
  <p className="text-xs text-[#A1A1AA]">No comments yet. Be the first to drop some dankness!</p>
  </div>
  ) : (

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { Heart, MessageCircle, Share2, Download, Bookmark, Volume2, VolumeX, Play } from 'lucide-react';
 import { MemePost } from '../types';
 
@@ -99,12 +99,23 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  onTouchStart={handleTouchStart}
  onTouchEnd={handleTouchEnd}
  >
+ {meme.type === 'reel' ? (
+ <video
+ src={meme.mediaUrl}
+ className="w-full h-full object-cover"
+ autoPlay
+ loop
+ muted={isMuted}
+ playsInline
+ />
+ ) : (
  <img
  src={meme.mediaUrl}
  alt={meme.caption}
  className="w-full h-full object-cover"
  loading="lazy"
  />
+ )}
 
  {/* Reel Badges & Audio Control */}
  {meme.type === 'reel' && (
@@ -137,7 +148,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
 
  {/* Live Watermark Preview Badge (always visible bottom-right corner) */}
  <div className="absolute bottom-3 right-3 bg-[#0A0A0A]/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#E6FF00]/40 flex items-center space-x-1 shadow-md pointer-events-none">
- <span className="text-[#FF3366] text-xs font-black"></span>
+ <span className="text-[#FF3366] text-xs font-black">⚡</span>
  <span className="text-xs font-black text-white">Sekaa</span>
  </div>
  </div>
@@ -221,4 +232,6 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  </article>
  );
 };
+
+
 

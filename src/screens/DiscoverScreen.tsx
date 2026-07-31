@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Search, Trophy, Flame, UserPlus, UserCheck } from 'lucide-react';
 import { Creator, MemePost } from '../types';
 
@@ -132,15 +132,15 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  <div className="space-y-3">
  <div className="flex items-center justify-between">
  <div className="flex items-center space-x-2">
- <span className="text-[#E6FF00] font-black text-sm"> 24H VIRALITY RANK</span>
+ <span className="text-[#E6FF00] font-black text-sm">🏆 24H VIRALITY RANK</span>
  </div>
- <span className="text-[10px] text-[#A1A1AA] font-bold uppercase">score = likes + sharesÃ—2 + downloadsÃ—3</span>
+ <span className="text-[10px] text-[#A1A1AA] font-bold uppercase">score = likes + sharesÃƒâ€”2 + downloadsÃƒâ€”3</span>
  </div>
 
  <div className="grid grid-cols-2 gap-3">
  {filteredRankedMemes.map((meme, idx) => {
  const rank = idx + 1;
- const badgeEmoji = rank === 1 ? 'ðŸ¥‡' : rank === 2 ? 'ðŸ¥ˆ' : rank === 3 ? 'ðŸ¥‰' : `#${rank}`;
+ const badgeEmoji = rank === 1 ? 'Ã°Å¸Â¥â€¡' : rank === 2 ? 'Ã°Å¸Â¥Ë†' : rank === 3 ? 'Ã°Å¸Â¥â€°' : `#${rank}`;
 
  return (
  <div
@@ -180,8 +180,8 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  {meme.caption}
  </p>
  <div className="flex items-center justify-between text-[10px] font-semibold text-[#A1A1AA] pt-1 border-t border-[#27272A]">
- <span className="text-[#E6FF00]"> {meme.likes.toLocaleString()}</span>
- <span>ðŸ“¥ {meme.downloads.toLocaleString()}</span>
+ <span className="text-[#E6FF00]">❤ {meme.likes.toLocaleString()}</span>
+ <span>Ã°Å¸â€œÂ¥ {meme.downloads.toLocaleString()}</span>
  </div>
  </div>
  </div>

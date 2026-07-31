@@ -1,9 +1,9 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Video, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Video, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { Category, MemeTemplate, MemePost, PostType } from '../types';
 import { INITIAL_TEMPLATES } from '../data/mockData';
 import { stampSekaaWatermark } from '../utils/watermark';
-import { uploadMemeImage } from '../lib/storage';
+import { uploadMemeImage, uploadMemeFile } from '../lib/storage';
 import { useAuth } from '../lib/AuthContext';
 
 interface CreateMemeStudioProps {
@@ -19,7 +19,9 @@ const EMOJI_STICKERS = ['🔥', '💀', '😂', '👑', '🕶️', '🗿', '🤡
 export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish }) => {
   const { currentUser } = useAuth();
   const [postType, setPostType] = useState<PostType>('image');
-  const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate>(INITIAL_TEMPLATES[0]);
+  const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(INITIAL_TEMPLATES[0]);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
   const [topCaption, setTopCaption] = useState(INITIAL_TEMPLATES[0].defaultTopText);
   const [bottomCaption, setBottomCaption] = useState(INITIAL_TEMPLATES[0].defaultBottomText);
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
@@ -29,18 +31,24 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
   const [error, setError] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Source image for the canvas: an uploaded phone photo takes priority over a template
+  const activeImageSrc = uploadedVideoFile ? '' : (uploadedImageUrl || selectedTemplate?.thumbnailUrl || '');
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !activeImageSrc) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (!uploadedImageUrl) img.crossOrigin = 'anonymous';
     img.onload = () => {
+      const aspect = img.naturalWidth && img.naturalHeight ? img.naturalHeight / img.naturalWidth : 1;
       canvas.width = 600;
-      canvas.height = postType === 'reel' ? 750 : 600;
+      canvas.height = uploadedImageUrl ? Math.round(600 * aspect) : (postType === 'reel' ? 750 : 600);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       const fontSize = Math.floor(canvas.width * 0.07);
@@ -72,10 +80,48 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
       stampSekaaWatermark(ctx, canvas.width, canvas.height);
     };
 
-    img.src = selectedTemplate.thumbnailUrl;
-  }, [selectedTemplate, topCaption, bottomCaption, selectedSticker, postType]);
+    img.src = activeImageSrc;
+  }, [activeImageSrc, uploadedImageUrl, topCaption, bottomCaption, selectedSticker, postType]);
+
+  // Clean up the blob URL when it's replaced or the component unmounts
+  useEffect(() => {
+    return () => {
+      if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
+    };
+  }, [uploadedImageUrl]);
+
+  const handleFileChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type.startsWith('video/')) {
+      setError(null);
+      setPostType('reel');
+      setUploadedVideoFile(file);
+      setUploadedImageUrl(null);
+      e.target.value = '';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image or video file.');
+      e.target.value = '';
+      return;
+    }
+
+    setError(null);
+    setPostType('image');
+    setUploadedVideoFile(null);
+    setUploadedImageUrl(URL.createObjectURL(file));
+    e.target.value = '';
+  };
+
+  const handleRemoveUpload = () => {
+    if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
+    setUploadedImageUrl(null);
+  };
 
   const handleSelectTemplate = (tpl: MemeTemplate) => {
+    if (uploadedImageUrl) handleRemoveUpload();
     setSelectedTemplate(tpl);
     setTopCaption(tpl.defaultTopText);
     setBottomCaption(tpl.defaultBottomText);
@@ -87,14 +133,14 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
       setError('You must be logged in to publish.');
       return;
     }
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!uploadedVideoFile && !canvasRef.current) return;
 
     setPublishing(true);
     setError(null);
     try {
-      const dataUrl = canvas.toDataURL('image/png');
-      const realMediaUrl = await uploadMemeImage(currentUser.uid, dataUrl);
+      const realMediaUrl = uploadedVideoFile
+        ? await uploadMemeFile(currentUser.uid, uploadedVideoFile)
+        : await uploadMemeImage(currentUser.uid, canvasRef.current!.toDataURL('image/png'));
 
       const newPost: MemePost = {
         id: `pending_${Date.now()}`,
@@ -151,17 +197,51 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
 
       <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-3 shadow-xl">
         <div className="relative w-full rounded-xl overflow-hidden bg-[#0A0A0A] border border-[#27272A]">
-          <canvas ref={canvasRef} className="w-full h-auto block max-h-[420px] object-contain mx-auto" />
+          {uploadedVideoFile ? (
+            <video
+              src={URL.createObjectURL(uploadedVideoFile)}
+              className="w-full h-auto block max-h-[420px] object-contain mx-auto"
+              controls
+              muted
+            />
+          ) : (
+            <canvas ref={canvasRef} className="w-full h-auto block max-h-[420px] object-contain mx-auto" />
+          )}
           <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/70 text-[#E6FF00] px-2 py-0.5 rounded-full border border-[#E6FF00]/30">
             Live Canvas Preview
           </span>
+          {uploadedImageUrl && (
+            <button
+              onClick={handleRemoveUpload}
+              className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black/90"
+              title="Remove uploaded photo"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="space-y-2">
         <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider block">
-          1. Select Format & Template
+          1. Add Your Photo or Pick a Template
         </span>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          onChange={handleFileChosen}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full flex items-center justify-center space-x-2 py-3 rounded-xl bg-[#E6FF00]/10 border-2 border-dashed border-[#E6FF00]/50 text-[#E6FF00] font-bold text-xs hover:bg-[#E6FF00]/20 transition-colors"
+        >
+          <Upload className="w-4 h-4" />
+          <span>Upload Photo From Your Phone</span>
+        </button>
+
         <div className="flex items-center space-x-3 overflow-x-auto no-scrollbar py-1">
           <button
             onClick={() => setPostType(postType === 'image' ? 'reel' : 'image')}
@@ -176,7 +256,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
               key={tpl.id}
               onClick={() => handleSelectTemplate(tpl)}
               className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 cursor-pointer relative ${
-                selectedTemplate.id === tpl.id
+                !uploadedImageUrl && selectedTemplate?.id === tpl.id
                   ? 'border-[#E6FF00] shadow-[0_0_12px_rgba(230,255,0,0.4)]'
                   : 'border-[#27272A] opacity-70 hover:opacity-100'
               }`}
@@ -192,7 +272,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
 
       <div className="space-y-3">
         <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider block">
-          2. Impact Captions
+          2. Impact Captions (Optional)
         </span>
         <div className="space-y-2">
           <input
@@ -282,3 +362,5 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
     </div>
   );
 };
+
+
