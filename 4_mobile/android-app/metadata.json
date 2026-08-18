@@ -1,0 +1,6 @@
+{
+  "name": "Seka",
+  "description": "The home for memes — vertical reels, meme chat, 24h status, and watermarked sharing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

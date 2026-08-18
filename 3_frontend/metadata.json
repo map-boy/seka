@@ -1,0 +1,6 @@
+{
+  "name": "Seka",
+  "description": "Seka - The home for memes. Web app with 24h statuses, meme studio with live canvas watermarking, chats, virality ranks, and community feeds.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

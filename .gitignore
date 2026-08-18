@@ -1,0 +1,30 @@
+# --- Node / website (3_frontend) ---
+3_frontend/node_modules/
+3_frontend/dist/
+3_frontend/build/
+3_frontend/coverage/
+**/.env
+!**/.env.example
+*.log
+.DS_Store
+
+# --- Android (4_mobile/android-app) ---
+4_mobile/android-app/.gradle/
+4_mobile/android-app/.kotlin/
+4_mobile/android-app/build/
+4_mobile/android-app/app/build/
+4_mobile/android-app/*.iml
+4_mobile/android-app/local.properties
+4_mobile/android-app/.idea/caches/
+4_mobile/android-app/.idea/libraries/
+4_mobile/android-app/.idea/workspace.xml
+4_mobile/android-app/.idea/navEditor.xml
+4_mobile/android-app/.idea/assetWizardSettings.xml
+4_mobile/android-app/captures/
+4_mobile/android-app/.externalNativeBuild/
+4_mobile/android-app/.cxx/
+4_mobile/android-app/debug.keystore
+4_mobile/android-app/**/google-services.json
+
+# --- General ---
+*.tmp
