@@ -1,4 +1,4 @@
-﻿name: Release
+name: Release
 
 on:
   push:
@@ -101,6 +101,18 @@ jobs:
         with:
           name: seka-ios-simulator
           path: 4_ios/Sekaa/build/Build/Products/Debug-iphonesimulator/seka-ios-simulator.zip
+      - name: Package unsigned .ipa
+        run: |
+          cd build/Build/Products/Debug-iphonesimulator
+          mkdir -p Payload
+          cp -R Sekaa.app Payload/
+          zip -r seka-unsigned.ipa Payload
+
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: seka-ios-ipa
+          path: 4_ios/Sekaa/build/Build/Products/Debug-iphonesimulator/seka-unsigned.ipa
   release:
     name: Create GitHub Release
     needs: [build-android, build-frontend, build-ios]
@@ -118,4 +130,5 @@ jobs:
             artifacts/seka-android-apk/app-debug.apk
             artifacts/seka-website/seka-website.zip
             artifacts/seka-ios-simulator/seka-ios-simulator.zip
+            artifacts/seka-ios-ipa/seka-unsigned.ipa
 

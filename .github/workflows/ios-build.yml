@@ -1,4 +1,4 @@
-﻿name: iOS Build
+name: iOS Build
 on:
   push:
     branches: [main]
@@ -61,3 +61,15 @@ jobs:
         with:
           name: sekaa-ios-simulator-build
           path: 4_ios/Sekaa/build/Build/Products/Debug-iphonesimulator/Sekaa-simulator.zip
+      - name: Package unsigned .ipa
+        run: |
+          cd build/Build/Products/Debug-iphonesimulator
+          mkdir -p Payload
+          cp -R Sekaa.app Payload/
+          zip -r Sekaa-unsigned.ipa Payload
+
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sekaa-ios-ipa-unsigned
+          path: 4_ios/Sekaa/build/Build/Products/Debug-iphonesimulator/Sekaa-unsigned.ipa
