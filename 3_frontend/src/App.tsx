@@ -373,6 +373,7 @@ export default function App() {
       <CommentSheet
         meme={commentMeme}
         comments={comments}
+          currentUserAvatar={user.avatar}
         onAddComment={handleAddComment}
         onLikeComment={handleLikeComment}
         onClose={() => setCommentMeme(null)}
@@ -428,5 +429,6 @@ export default function App() {
     </div>
   );
 }
+
 
 
