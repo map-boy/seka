@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TabType, BottomNav } from './components/BottomNav';
 import { HomeScreen } from './pages/HomeScreen';
 import { DiscoverScreen } from './pages/DiscoverScreen';
@@ -43,6 +43,9 @@ import {
   StatusDoc,
 } from './lib/firestore/statuses';
 import { Creator, MemePost, StatusItem, Comment } from './types';
+import { loadMoreMemes, hasMoreMemes } from './lib/firestore/memes';
+import { subscribeToBlockedUsers, blockUser, reportContent } from './lib/firestore/moderation';
+import { ReportModal } from './components/ReportModal';
 
 const EMPTY_CREATOR: Omit<Creator, 'id'> = {
   name: 'New User',
@@ -96,6 +99,11 @@ export default function App() {
   const [activeStatus, setActiveStatus] = useState<StatusItem | null>(null);
   const [isMemeTrayOpen, setIsMemeTrayOpen] = useState(false);
   const [selectedMemeForChat, setSelectedMemeForChat] = useState<MemePost | null>(null);
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  const [reportTarget, setReportTarget] = useState<MemePost | null>(null);
+  const [extraMemes, setExtraMemes] = useState<(MemeDoc & { id: string })[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => subscribeToCreators(setCreators), []);
 
@@ -105,6 +113,11 @@ export default function App() {
   }, [currentUser]);
 
   useEffect(() => subscribeToMemes(setRawMemes), []);
+
+  useEffect(() => {
+    if (!currentUser) { setBlockedIds(new Set()); return; }
+    return subscribeToBlockedUsers(currentUser.uid, setBlockedIds);
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) { setLikedMemeMap(new Map()); return; }
@@ -148,7 +161,11 @@ export default function App() {
 
   const creatorsMap = new Map<string, Creator>(creators.map((c) => [c.id, c]));
 
-  const memes: MemePost[] = rawMemes.map((m) => {
+  const combinedRawMemes = [...rawMemes, ...extraMemes];
+
+  const memes: MemePost[] = combinedRawMemes
+    .filter((m) => !blockedIds.has(m.creatorId))
+    .map((m) => {
     const creator = creatorsMap.get(m.creatorId) ?? { id: m.creatorId, ...EMPTY_CREATOR };
     return {
       id: m.id,
@@ -276,6 +293,25 @@ export default function App() {
     }
   };
 
+  const handleLoadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const more = await loadMoreMemes();
+    setExtraMemes((prev) => [...prev, ...more]);
+    setHasMore(hasMoreMemes());
+    setLoadingMore(false);
+  };
+
+  const handleReportMeme = async (reason: string) => {
+    if (!currentUser || !reportTarget) return;
+    await reportContent(currentUser.uid, 'meme', reportTarget.id, reason);
+  };
+
+  const handleBlockCreator = (creatorId: string) => {
+    if (!requireAuth() || !currentUser) return;
+    blockUser(currentUser.uid, creatorId);
+  };
+
   const savedMemes = memes.filter((m) => m.isSaved);
   const likedMemes = memes.filter((m) => m.isLiked);
   const userMemes = memes.filter((m) => m.isMine);
@@ -303,6 +339,11 @@ export default function App() {
           onSelectStatus={handleSelectStatus}
           onAddStatusClick={() => setActiveTab('create')}
           onCreatorClick={() => setActiveTab('profile')}
+          onReportClick={(m) => setReportTarget(m)}
+          onBlockCreatorClick={handleBlockCreator}
+          onLoadMore={handleLoadMore}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
         />
       )}
 
@@ -412,6 +453,14 @@ export default function App() {
         savedMemes={savedMemes}
         onSelectMeme={(meme) => { setSelectedMemeForChat(meme); setIsMemeTrayOpen(false); }}
       />
+
+      {reportTarget && (
+        <ReportModal
+          title="Report Meme"
+          onSubmit={handleReportMeme}
+          onClose={() => setReportTarget(null)}
+        />
+      )}
 
       {authPromptOpen && !currentUser && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
