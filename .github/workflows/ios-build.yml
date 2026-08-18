@@ -13,7 +13,6 @@ jobs:
   ios:
     name: iOS app build (Xcode)
     runs-on: macos-latest
-    continue-on-error: true
     defaults:
       run:
         working-directory: 4_ios/Sekaa
@@ -23,31 +22,42 @@ jobs:
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode.app
 
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
       - name: Decode GoogleService-Info.plist
         env:
           GOOGLESERVICE_PLIST_B64: ${{ secrets.IOS_GOOGLESERVICE_PLIST }}
         run: |
           if [ -z "$GOOGLESERVICE_PLIST_B64" ]; then
-            echo "IOS_GOOGLESERVICE_PLIST secret not set - skipping plist decode."
-            echo "Add it in repo Settings > Secrets > Actions before this build can succeed."
+            echo "IOS_GOOGLESERVICE_PLIST secret not set."
             exit 1
           fi
           echo "$GOOGLESERVICE_PLIST_B64" | base64 --decode > GoogleService-Info.plist
 
+      - name: Generate Xcode project
+        run: xcodegen generate
+
       - name: Resolve Swift Package dependencies
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project Sekaa.xcodeproj \
-            -scheme Sekaa || echo "No .xcodeproj yet - see note below"
+        run: xcodebuild -resolvePackageDependencies -project Sekaa.xcodeproj -scheme Sekaa
 
       - name: Build (Debug, iOS Simulator)
         run: |
           xcodebuild build \
             -project Sekaa.xcodeproj \
             -scheme Sekaa \
-            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -destination "platform=iOS Simulator,name=iPhone 15,OS=latest" \
+            -derivedDataPath build \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
-# trigger rebuild
 
-# retrigger
+      - name: Zip .app for Appetize/Simulator testing
+        run: |
+          cd build/Build/Products/Debug-iphonesimulator
+          zip -r Sekaa-simulator.zip Sekaa.app
+
+      - name: Upload simulator build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sekaa-ios-simulator-build
+          path: 4_ios/Sekaa/build/Build/Products/Debug-iphonesimulator/Sekaa-simulator.zip
