@@ -1,4 +1,4 @@
-name: Release
+﻿name: Release
 
 on:
   push:
@@ -88,7 +88,7 @@ jobs:
           xcodebuild build \
             -project Sekaa.xcodeproj \
             -scheme Sekaa \
-            -destination "platform=iOS Simulator,name=iPhone 15,OS=latest" \
+            -destination "platform=iOS Simulator,name=iPhone 17,OS=latest" \
             -derivedDataPath build \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
@@ -118,3 +118,4 @@ jobs:
             artifacts/seka-android-apk/app-debug.apk
             artifacts/seka-website/seka-website.zip
             artifacts/seka-ios-simulator/seka-ios-simulator.zip
+
