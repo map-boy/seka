@@ -34,7 +34,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({ onClose }) => {
           </button>
         </div>
 
-        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="w-full flex items-center space-x-3 py-3 px-3 rounded-xl bg-[#18181B] border border-[#27272A] text-white hover:border-[#E6FF00] transition-colors">
+        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="w-full flex items-center space-x-3 py-3 px-3 rounded-xl bg-[#18181B] border border-[#27272A] text-white hover:border-[#E6FF00] transition-colors">
           <FileText className="w-4 h-4 text-[#A1A1AA]" />
           <span className="text-sm font-bold">Privacy Policy</span>
         </a>
