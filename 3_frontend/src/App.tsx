@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { TabType, BottomNav } from './components/BottomNav';
 import { HomeScreen } from './pages/HomeScreen';
 import { DiscoverScreen } from './pages/DiscoverScreen';
@@ -161,7 +161,17 @@ export default function App() {
 
   const creatorsMap = new Map<string, Creator>(creators.map((c) => [c.id, c]));
 
-  const combinedRawMemes = [...rawMemes, ...extraMemes];
+  const combinedRawMemes = (() => {
+    const seen = new Set<string>();
+    const merged: (MemeDoc & { id: string })[] = [];
+    for (const m of [...rawMemes, ...extraMemes]) {
+      if (!seen.has(m.id)) {
+        seen.add(m.id);
+        merged.push(m);
+      }
+    }
+    return merged;
+  })();
 
   const memes: MemePost[] = combinedRawMemes
     .filter((m) => !blockedIds.has(m.creatorId))
