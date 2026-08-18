@@ -1,5 +1,0 @@
-﻿{
-  "buildCommand": "cd 3_frontend && npm install && npm run build",
-  "outputDirectory": "3_frontend/dist",
-  "installCommand": "echo skip"
-}
