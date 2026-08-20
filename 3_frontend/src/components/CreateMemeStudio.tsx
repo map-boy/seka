@@ -2,9 +2,10 @@
 import { Sparkles, Video, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { Category, MemeTemplate, MemePost, PostType } from '../types';
 import { INITIAL_TEMPLATES } from '../data/mockData';
-import { stampSekaaWatermark } from '../utils/watermark';
+import { stampSekaaWatermark, createWatermarkedCanvas } from '../utils/watermark';
 import { uploadMemeImage, uploadMemeFile } from '../lib/storage';
 import { useAuth } from '../hooks/AuthContext';
+import { ImageCropModal } from './ImageCropModal';
 
 interface CreateMemeStudioProps {
   onPublish: (newPost: MemePost, postToStatus: boolean) => void;
@@ -22,6 +23,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(INITIAL_TEMPLATES[0]);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
+  const [pendingCropUrl, setPendingCropUrl] = useState<string | null>(null);
   const [topCaption, setTopCaption] = useState(INITIAL_TEMPLATES[0].defaultTopText);
   const [bottomCaption, setBottomCaption] = useState(INITIAL_TEMPLATES[0].defaultBottomText);
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
@@ -33,7 +35,6 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Source image for the canvas: an uploaded phone photo takes priority over a template
   const activeImageSrc = uploadedVideoFile ? '' : (uploadedImageUrl || selectedTemplate?.thumbnailUrl || '');
 
   useEffect(() => {
@@ -83,12 +84,16 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
     img.src = activeImageSrc;
   }, [activeImageSrc, uploadedImageUrl, topCaption, bottomCaption, selectedSticker, postType]);
 
-  // Clean up the blob URL when it's replaced or the component unmounts
   useEffect(() => {
     return () => {
       if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
     };
   }, [uploadedImageUrl]);
+
+  // NOTE: this preview canvas is intentionally kept at 600px wide for smooth
+  // live typing/sticker updates. The FULL-RESOLUTION export happens separately
+  // at publish time via createWatermarkedCanvas() below, which draws at the
+  // source image's actual naturalWidth/naturalHeight.
 
   const handleFileChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -111,8 +116,21 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
     setError(null);
     setPostType('image');
     setUploadedVideoFile(null);
-    setUploadedImageUrl(URL.createObjectURL(file));
+    // Route through the crop modal first, rather than using the photo as-is.
+    setPendingCropUrl(URL.createObjectURL(file));
     e.target.value = '';
+  };
+
+  const handleCropConfirm = (croppedDataUrl: string) => {
+    if (pendingCropUrl) URL.revokeObjectURL(pendingCropUrl);
+    setPendingCropUrl(null);
+    if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
+    setUploadedImageUrl(croppedDataUrl);
+  };
+
+  const handleCropCancel = () => {
+    if (pendingCropUrl) URL.revokeObjectURL(pendingCropUrl);
+    setPendingCropUrl(null);
   };
 
   const handleRemoveUpload = () => {
@@ -133,14 +151,24 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
       setError('You must be logged in to publish.');
       return;
     }
-    if (!uploadedVideoFile && !canvasRef.current) return;
+    if (!uploadedVideoFile && !activeImageSrc) return;
 
     setPublishing(true);
     setError(null);
     try {
       const realMediaUrl = uploadedVideoFile
         ? await uploadMemeFile(currentUser.uid, uploadedVideoFile)
-        : await uploadMemeImage(currentUser.uid, canvasRef.current!.toDataURL('image/png'));
+        : await uploadMemeImage(
+            currentUser.uid,
+            // Full-resolution export: draws at the source image's native pixel
+            // dimensions, not the 600px preview canvas.
+            await createWatermarkedCanvas({
+              sourceImageUrl: activeImageSrc,
+              topText: topCaption,
+              bottomText: bottomCaption,
+              sticker: selectedSticker || undefined,
+            })
+          );
 
       const newPost: MemePost = {
         id: `pending_${Date.now()}`,
@@ -185,6 +213,14 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
 
   return (
     <div className="pb-24 pt-2 px-4 space-y-5 max-w-lg mx-auto">
+      {pendingCropUrl && (
+        <ImageCropModal
+          imageUrl={pendingCropUrl}
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
+      )}
+
       <div className="space-y-1">
         <div className="flex items-center space-x-2">
           <Sparkles className="w-5 h-5 text-[#E6FF00]" />
@@ -362,5 +398,3 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
     </div>
   );
 };
-
-
