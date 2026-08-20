@@ -1,33 +1,46 @@
 # seka
 
-Meme-native social app — a React/Vite/Firebase website and a matching native
-Android (Kotlin + Compose) app, sharing the same product surface (memes,
-statuses, chat, discover, profile).
+Meme-native social app - React/Vite/Firebase website, Android (Kotlin + Compose),
+and iOS (SwiftUI) apps sharing the same product surface (memes, statuses, chat,
+discover, profile).
 
 ## Structure
 
 | Folder | Status | What's there |
 |---|---|---|
-| `1_core/` | empty (placeholder) | No shared cross-platform domain logic exists yet — web is TypeScript, mobile is Kotlin, with no common layer between them. |
-| `2_backend/db/` | **populated** | Firebase config + security rules: `firebase.json`, `firestore.rules`, `storage.rules`. |
-| `2_backend/api,cache,messaging,schemas,services/` | empty (placeholder) | No standalone backend service exists — Firebase is used directly from the client. |
-| `3_frontend/` | **populated** | The full Vite + React + TypeScript website. |
-| `4_mobile/android-app/` | **populated** | The full Android Gradle project (see `4_mobile/README.md` for how it maps to the template folders). |
-| `5_ml/`, `6_genai/`, `7_hardware_robotics/` | empty (placeholder) | Not part of this project. |
-| `8_ops/` | empty (placeholder) | No Docker/K8s/CI scripts existed yet beyond the workflow below. |
-| `.github/workflows/ci.yml` | **populated** | Builds both the website and the Android app on every push/PR. Stays at repo root — GitHub Actions only looks for workflows there. |
+| `2_backend/db/` | populated | Firebase config + security rules: firebase.json, firestore.rules, storage.rules. |
+| `2_backend/api,cache,messaging,schemas,services/` | empty (placeholder) | No standalone backend service exists yet - Firebase used directly from clients. |
+| `3_frontend/` | populated | Vite + React + TypeScript website. |
+| `4_mobile/android-app/` | populated | Android Gradle project (Kotlin + Compose). |
+| `4_ios/Sekaa/` | populated | iOS app (SwiftUI), generated via XcodeGen (project.yml). |
+| `.github/workflows/` | populated | ci.yml (build/test on push), ios-build.yml (iOS simulator build), release.yml (tagged releases). |
 
 ## Running locally
 
-**Website** (`3_frontend/`):
-```
-cd 3_frontend
-npm install
-npm run dev
-```
+Website (3_frontend/):
 
-**Android app** (`4_mobile/android-app/`):
-```
-cd 4_mobile/android-app
-./gradlew assembleDebug
-```
+    cd 3_frontend
+    npm install
+    npm run dev
+
+Android app (4_mobile/android-app/):
+
+    cd 4_mobile/android-app
+    ./gradlew assembleDebug
+
+iOS app (4_ios/Sekaa/) - requires macOS + Xcode + XcodeGen:
+
+    cd 4_ios/Sekaa
+    brew install xcodegen
+    xcodegen generate
+    open Sekaa.xcodeproj
+
+Needs GoogleService-Info.plist placed in 4_ios/Sekaa/ (not committed - get it from the Firebase console).
+
+## Distribution status
+
+- Web: deploys to Vercel automatically. Ready to share.
+- Android: CI builds a debug-signed APK on every tag. Not yet on Play Store.
+- iOS: CI builds an unsigned simulator-only build. Does not install on real
+  devices yet - needs an Apple Developer account, a distribution certificate,
+  and TestFlight setup before it can go to real testers.
