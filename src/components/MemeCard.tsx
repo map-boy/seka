@@ -57,42 +57,40 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  };
 
  return (
- <article className="bg-[#18181B] border border-[#27272A] rounded-2xl overflow-hidden mb-4 shadow-lg transition-all hover:border-[#27272A]">
- {/* Header Row */}
- <div className="p-3 flex items-center justify-between border-b border-[#27272A]/50">
+ <article className="relative mb-2 min-h-[calc(100svh-13.5rem)] snap-start overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#18181B] shadow-2xl">
+ {/* Creator overlay */}
+ <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/75 to-transparent p-4 pb-12">
  <div
  className="flex items-center space-x-2.5 cursor-pointer"
  onClick={() => onCreatorClick && onCreatorClick(meme.creatorId)}
  >
- <div className="w-10 h-10 rounded-full p-[2px] bg-[#E6FF00] flex items-center justify-center">
+ <div className="h-10 w-10 rounded-full p-[2px] bg-[#E6FF00] flex items-center justify-center">
  <img
  src={meme.creator.avatar}
  alt={meme.creator.name}
  className="w-full h-full rounded-full object-cover border border-[#18181B]"
  />
  </div>
- <div>
+ <div className="drop-shadow-md">
  <div className="flex items-center space-x-1.5">
  <span className="text-xs font-bold text-white hover:underline">{meme.creator.name}</span>
  <span className="text-[10px] text-[#A1A1AA]">. {meme.createdAt}</span>
  </div>
- <span className="text-[11px] font-semibold text-[#E6FF00] block leading-tight">
+ <span className="block text-[11px] font-semibold leading-tight text-[#E6FF00]">
  {meme.creator.handle}
  </span>
  </div>
  </div>
 
  {/* Category Pill */}
- <span className="text-[10px] font-bold bg-[#27272A] text-[#E6FF00] border border-[#E6FF00]/30 px-2.5 py-1 rounded-full uppercase tracking-wide">
+ <span className="rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-md">
  {meme.category}
  </span>
  </div>
 
  {/* Media Area */}
  <div
- className={`relative bg-[#0A0A0A] overflow-hidden cursor-pointer select-none ${
- meme.type === 'reel' ? 'aspect-[4/5]' : 'aspect-[4/3]'
- }`}
+ className="relative h-full min-h-[calc(100svh-13.5rem)] cursor-pointer select-none overflow-hidden bg-[#0A0A0A]"
  onClick={handleMediaClick}
  onMouseDown={handleTouchStart}
  onMouseUp={handleTouchEnd}
@@ -102,7 +100,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  {meme.type === 'reel' ? (
  <video
  src={meme.mediaUrl}
- className="w-full h-full object-cover"
+ className="h-full w-full object-cover"
  autoPlay
  loop
  muted={isMuted}
@@ -112,7 +110,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  <img
  src={meme.mediaUrl}
  alt={meme.caption}
- className="w-full h-full object-cover"
+ className="h-full w-full object-cover"
  loading="lazy"
  />
  )}
@@ -120,7 +118,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  {/* Reel Badges & Audio Control */}
  {meme.type === 'reel' && (
  <>
- <div className="absolute top-3 left-3 bg-[#0A0A0A]/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 flex items-center space-x-1.5">
+ <div className="absolute left-3 top-16 flex items-center space-x-1.5 rounded-full border border-white/10 bg-[#0A0A0A]/70 px-2.5 py-1 backdrop-blur-md">
  <Play className="w-3 h-3 text-[#E6FF00] fill-current" />
  <span className="text-[10px] font-black text-white tracking-wider">
  REEL . {meme.duration || '0:12'}
@@ -131,7 +129,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  e.stopPropagation();
  setIsMuted(!isMuted);
  }}
- className="absolute bottom-3 right-16 w-8 h-8 rounded-full bg-[#0A0A0A]/70 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:text-[#E6FF00] transition-colors"
+ className="absolute bottom-28 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#0A0A0A]/70 text-white backdrop-blur-md transition-colors hover:text-[#E6FF00]"
  title={isMuted ? 'Unmute' : 'Mute'}
  >
  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -147,86 +145,34 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  )}
 
  {/* Live Watermark Preview Badge (always visible bottom-right corner) */}
- <div className="absolute bottom-3 right-3 bg-[#0A0A0A]/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#E6FF00]/40 flex items-center space-x-1 shadow-md pointer-events-none">
+ <div className="pointer-events-none absolute bottom-4 left-4 flex items-center space-x-1 rounded-full border border-[#E6FF00]/40 bg-[#0A0A0A]/75 px-2.5 py-1 shadow-md backdrop-blur-md">
  <span className="text-[#FF3366] text-xs font-black">⚡</span>
  <span className="text-xs font-black text-white">Sekaa</span>
  </div>
  </div>
 
- {/* Caption Line + Hashtags */}
- <div className="p-3 space-y-1.5">
- <p className="text-xs font-semibold text-white leading-relaxed">{meme.caption}</p>
+ {/* Caption and action rail */}
+ <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between bg-gradient-to-t from-black/90 via-black/55 to-transparent p-4 pt-28">
+ <div className="max-w-[calc(100%-4rem)] space-y-1.5">
+ <p className="text-sm font-semibold leading-relaxed text-white">{meme.caption}</p>
  <div className="flex flex-wrap gap-1.5">
  {meme.hashtags.map((tag) => (
- <span key={tag} className="text-[11px] font-bold text-[#E6FF00] hover:underline cursor-pointer">
+ <span key={tag} className="cursor-pointer text-[11px] font-bold text-[#E6FF00] hover:underline">
  {tag}
  </span>
  ))}
  </div>
- </div>
 
- {/* Action Rail */}
- <div className="bg-[#27272A]/40 border-t border-[#27272A] px-3 py-2 flex items-center justify-between">
- {/* Left Actions: Like, Comment, Share */}
- <div className="flex items-center space-x-4">
- {/* Like */}
- <button
- onClick={() => onLike(meme.id)}
- className={`flex items-center space-x-1.5 text-xs font-bold transition-transform active:scale-125 ${
- meme.isLiked ? 'text-[#E6FF00]' : 'text-[#A1A1AA] hover:text-white'
- }`}
- >
- {meme.reaction ? (
- <span className="text-base leading-none">{meme.reaction}</span>
- ) : (
- <Heart className={`w-4 h-4 ${meme.isLiked ? 'fill-[#E6FF00]' : ''}`} />
- )}
+ <div className="flex flex-col items-center gap-3">
+ <button onClick={() => onLike(meme.id)} className={`flex flex-col items-center gap-0.5 text-[10px] font-bold ${meme.isLiked ? 'text-[#E6FF00]' : 'text-white'}`} title="Like">
+ {meme.reaction ? <span className="text-xl leading-none">{meme.reaction}</span> : <Heart className={`h-6 w-6 ${meme.isLiked ? 'fill-[#E6FF00]' : ''}`} />}
  <span>{meme.likes.toLocaleString()}</span>
  </button>
-
- {/* Comment */}
- <button
- onClick={() => onCommentClick(meme)}
- className="flex items-center space-x-1.5 text-xs font-bold text-[#A1A1AA] hover:text-white transition-colors"
- >
- <MessageCircle className="w-4 h-4" />
- <span>{meme.commentsCount.toLocaleString()}</span>
- </button>
-
- {/* Share */}
- <button
- onClick={() => onShareClick(meme)}
- className="flex items-center space-x-1.5 text-xs font-bold text-[#A1A1AA] hover:text-white transition-colors"
- >
- <Share2 className="w-4 h-4" />
- <span>{meme.shares.toLocaleString()}</span>
- </button>
+ <button onClick={() => onCommentClick(meme)} className="flex flex-col items-center gap-0.5 text-[10px] font-bold text-white" title="Comments"><MessageCircle className="h-6 w-6" /><span>{meme.commentsCount.toLocaleString()}</span></button>
+ <button onClick={() => onShareClick(meme)} className="flex flex-col items-center gap-0.5 text-[10px] font-bold text-white" title="Share"><Share2 className="h-6 w-6" /><span>{meme.shares.toLocaleString()}</span></button>
+ <button onClick={() => onSaveClick(meme.id)} className={`flex flex-col items-center gap-0.5 text-[10px] font-bold ${meme.isSaved ? 'text-[#E6FF00]' : 'text-white'}`} title={meme.isSaved ? 'Saved' : 'Save'}><Bookmark className={`h-6 w-6 ${meme.isSaved ? 'fill-[#E6FF00]' : ''}`} /><span>Save</span></button>
+ <button onClick={() => onDownloadClick(meme)} className="flex flex-col items-center gap-0.5 text-[10px] font-bold text-white" title="Download with watermark"><Download className="h-6 w-6 text-[#FF9500]" /><span>Save</span></button>
  </div>
-
- {/* Right Actions: Download (Watermark) & Save */}
- <div className="flex items-center space-x-2">
- {/* Download with Sekaa Watermark */}
- <button
- onClick={() => onDownloadClick(meme)}
- className="flex items-center space-x-1 bg-[#FF9500]/15 hover:bg-[#FF9500]/25 text-[#FF9500] border border-[#FF9500]/40 px-2.5 py-1 rounded-full text-xs font-bold transition-all"
- title="Download with Sekaa Watermark"
- >
- <Download className="w-3.5 h-3.5" />
- <span className="hidden sm:inline">Watermark</span>
- </button>
-
- {/* Save to Collection */}
- <button
- onClick={() => onSaveClick(meme.id)}
- className={`p-1.5 rounded-full border transition-colors ${
- meme.isSaved
- ? 'bg-[#E6FF00]/15 border-[#E6FF00] text-[#E6FF00]'
- : 'bg-[#27272A] border-[#27272A] text-[#A1A1AA] hover:text-white'
- }`}
- title={meme.isSaved ? 'Saved' : 'Save Meme'}
- >
- <Bookmark className={`w-4 h-4 ${meme.isSaved ? 'fill-[#E6FF00]' : ''}`} />
- </button>
  </div>
  </div>
  </article>

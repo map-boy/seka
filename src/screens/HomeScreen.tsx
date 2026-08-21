@@ -151,8 +151,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
  </div>
  </div>
 
- {/* Meme Feed */}
- <main className="p-4 max-w-lg mx-auto">
+ {/* TikTok-style snap feed */}
+ <main className="mx-auto max-w-lg snap-y snap-mandatory overflow-y-auto px-2 pb-24 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
  {displayedMemes.length === 0 ? (
  <div className="text-center py-16 space-y-3">
  <span className="text-4xl">🙁</span>

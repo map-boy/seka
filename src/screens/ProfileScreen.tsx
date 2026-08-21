@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Grid, Bookmark, Heart, Share2, Edit3, Trophy } from 'lucide-react';
+import { Grid, Bookmark, Heart, Share2, Edit3, Trophy, Copy, MoreHorizontal } from 'lucide-react';
 import { Creator, MemePost } from '../types';
 
 interface ProfileScreenProps {
@@ -9,7 +9,6 @@ interface ProfileScreenProps {
  likedMemes: MemePost[];
  onSelectMeme: (meme: MemePost) => void;
 }
-
 type ProfileTab = 'my_memes' | 'saved' | 'liked';
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -36,36 +35,48 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
  const activeList = getActiveList();
 
+ const handleShare = async () => {
+ const profileUrl = `${window.location.origin}/profile/${user.handle}`;
+ if (navigator.clipboard) await navigator.clipboard.writeText(profileUrl);
+ };
+
  return (
- <div className="pb-24 pt-4 px-4 space-y-5 max-w-lg mx-auto">
+ <div className="mx-auto max-w-lg space-y-5 px-4 pb-24 pt-3">
  {/* Top Header Row */}
  <div className="flex items-center justify-between border-b border-[#27272A] pb-3">
- <span className="text-base font-black text-[#E6FF00]">{user.handle}</span>
+ <div className="flex items-center gap-2">
+ <span className="text-base font-black text-white">@{user.handle}</span>
+ <span className="rounded-full bg-[#E6FF00] px-2 py-0.5 text-[9px] font-black uppercase text-[#0A0A0A]">Creator</span>
+ </div>
+ <div className="flex items-center gap-1">
+ <button onClick={() => alert('Edit Profile: Update bio, avatar, and badge.')} className="flex h-9 items-center gap-1.5 rounded-full bg-[#E6FF00] px-3 text-[10px] font-black text-[#0A0A0A]" title="Edit profile">
+ <Edit3 className="h-3.5 w-3.5" /> Edit
+ </button>
  <button
  onClick={() => alert('Settings: Account, Privacy, Sekaa Watermark preferences.')}
- className="w-9 h-9 rounded-full bg-[#18181B] border border-[#27272A] flex items-center justify-center text-[#A1A1AA] hover:text-white"
+ className="flex h-9 w-9 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-[#A1A1AA] hover:text-white"
  >
- <Settings className="w-4 h-4" />
+ <MoreHorizontal className="h-4 w-4" />
  </button>
  </div>
 
  {/* User Info Block */}
  <div className="flex flex-col items-center text-center space-y-3">
- <div className="relative">
- <div className="w-24 h-24 rounded-full p-[3px] bg-[#E6FF00] shadow-[0_0_20px_rgba(230,255,0,0.4)]">
+ <div className="flex flex-col items-center space-y-3 text-center">
+ <div className="h-24 w-24 rounded-full bg-gradient-to-br from-[#E6FF00] via-[#22D3EE] to-[#FF3366] p-[3px] shadow-[0_0_20px_rgba(230,255,0,0.25)]">
  <img
  src={user.avatar}
  alt={user.name}
  className="w-full h-full rounded-full object-cover border-2 border-[#0A0A0A]"
  />
  </div>
- <span className="absolute bottom-0 right-0 bg-[#E6FF00] text-[#0A0A0A] p-1 rounded-full shadow-md">
+ <span className="absolute bottom-0 right-0 rounded-full bg-[#E6FF00] p-1 text-[#0A0A0A] shadow-md">
  <Trophy className="w-3.5 h-3.5" />
  </span>
  </div>
 
  <div>
- <h2 className="text-lg font-black text-white">{user.name}</h2>
+ <h2 className="text-xl font-black text-white">{user.name}</h2>
  <span className="inline-block text-[10px] font-bold bg-[#E6FF00]/15 text-[#E6FF00] border border-[#E6FF00]/30 px-2.5 py-0.5 rounded-full mt-1 uppercase">
  {user.badge}
  </span>
@@ -74,28 +85,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  <p className="text-xs text-[#A1A1AA] max-w-xs leading-relaxed">{user.bio}</p>
 
  {/* Stats Row */}
- <div className="w-full bg-[#18181B] border border-[#27272A] rounded-2xl p-3.5 flex justify-around">
+ <div className="grid w-full grid-cols-4 divide-x divide-[#27272A] border-y border-[#27272A] py-3.5">
  <div className="text-center">
  <span className="text-sm font-black text-white block">
  {formatNumber(userMemes.length)}
  </span>
  <span className="text-[10px] text-[#71717A] font-bold uppercase">Memes</span>
  </div>
- <div className="w-[1px] bg-[#27272A]" />
  <div className="text-center">
  <span className="text-sm font-black text-white block">
  {formatNumber(user.followerCount)}
  </span>
  <span className="text-[10px] text-[#71717A] font-bold uppercase">Followers</span>
  </div>
- <div className="w-[1px] bg-[#27272A]" />
  <div className="text-center">
  <span className="text-sm font-black text-white block">
  {formatNumber(user.followingCount)}
  </span>
  <span className="text-[10px] text-[#71717A] font-bold uppercase">Following</span>
  </div>
- <div className="w-[1px] bg-[#27272A]" />
  <div className="text-center">
  <span className="text-sm font-black text-[#E6FF00] block">
  {formatNumber(user.totalLikes)}
@@ -104,21 +112,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  </div>
  </div>
 
- {/* Edit & Share Buttons */}
- <div className="w-full flex space-x-2">
+ {/* Share Button */}
+ <div className="flex w-full space-x-2">
  <button
- onClick={() => alert('Edit Profile: Update bio, avatar, and badge.')}
- className="flex-1 py-2.5 rounded-full bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-bold border border-[#27272A] flex items-center justify-center space-x-1.5 transition-colors"
+ onClick={handleShare}
+ className="flex-1 rounded-full border border-[#27272A] bg-[#18181B] py-2.5 text-xs font-black text-white transition-colors hover:border-[#E6FF00] hover:text-[#E6FF00]"
  >
- <Edit3 className="w-3.5 h-3.5" />
- <span>Edit Profile</span>
+ <span className="flex items-center justify-center gap-1.5"><Share2 className="h-3.5 w-3.5" /> Share profile</span>
  </button>
- <button
- onClick={() => alert('Profile link copied to clipboard!')}
- className="flex-1 py-2.5 rounded-full bg-[#E6FF00] hover:bg-[#d8f000] text-[#0A0A0A] text-xs font-black flex items-center justify-center space-x-1.5 shadow-[0_0_12px_rgba(230,255,0,0.3)] transition-all"
- >
- <Share2 className="w-3.5 h-3.5 stroke-[2.5]" />
- <span>Share Profile</span>
+ <button onClick={handleShare} className="flex h-9 w-10 items-center justify-center rounded-full border border-[#27272A] bg-[#18181B] text-[#A1A1AA] hover:text-white" title="Copy profile link">
+ <Copy className="h-4 w-4" />
  </button>
  </div>
  </div>
@@ -134,7 +137,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  }`}
  >
  <Grid className="w-4 h-4" />
- <span>My Memes</span>
+ <span>Posts</span>
  </button>
  <button
  onClick={() => setActiveTab('saved')}
@@ -145,7 +148,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  }`}
  >
  <Bookmark className="w-4 h-4" />
- <span>Saved ({savedMemes.length})</span>
+ <span>Saved</span>
  </button>
  <button
  onClick={() => setActiveTab('liked')}
@@ -156,7 +159,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  }`}
  >
  <Heart className="w-4 h-4" />
- <span>Liked ({likedMemes.length})</span>
+ <span>Liked</span>
  </button>
  </div>
 
@@ -164,7 +167,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  <div>
  {activeList.length === 0 ? (
  <div className="text-center py-12 space-y-2">
- <span className="text-3xl">ðŸ“­</span>
+ <span className="text-3xl text-[#E6FF00]">+</span>
  <p className="text-xs text-[#A1A1AA] font-bold">
  {activeTab === 'my_memes'
  ? 'You havent created any memes yet. Tap + to craft one in Meme Studio!'
@@ -174,12 +177,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  </p>
  </div>
  ) : (
- <div className="grid grid-cols-3 gap-2">
+ <div className="grid grid-cols-3 gap-1">
  {activeList.map((meme) => (
  <div
  key={meme.id}
  onClick={() => onSelectMeme(meme)}
- className="relative aspect-square rounded-xl overflow-hidden border border-[#27272A] hover:border-[#E6FF00] cursor-pointer group bg-[#0A0A0A]"
+ className="group relative aspect-[4/5] cursor-pointer overflow-hidden border border-[#27272A] bg-[#0A0A0A] hover:border-[#E6FF00]"
  >
  <img
  src={meme.mediaUrl}
@@ -195,6 +198,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  ))}
  </div>
  )}
+ </div>
  </div>
  </div>
  );
