@@ -14,8 +14,17 @@ const firebaseConfig = {
  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-export const app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+export const firebaseConfigured = Boolean(
+ firebaseConfig.apiKey &&
+ firebaseConfig.authDomain &&
+ firebaseConfig.projectId &&
+ firebaseConfig.appId
+);
+
+export const app = getApps().length
+ ? getApps()[0]!
+ : initializeApp(firebaseConfigured ? firebaseConfig : { projectId: "sekaa-local-demo" });
+export const auth = firebaseConfigured ? getAuth(app) : null;
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 

@@ -23,6 +23,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(INITIAL_TEMPLATES[0]);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
   const [pendingCropUrl, setPendingCropUrl] = useState<string | null>(null);
   const [topCaption, setTopCaption] = useState(INITIAL_TEMPLATES[0].defaultTopText);
   const [bottomCaption, setBottomCaption] = useState(INITIAL_TEMPLATES[0].defaultBottomText);
@@ -86,9 +87,13 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
 
   useEffect(() => {
     return () => {
-      if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
+      if (uploadedImageUrl?.startsWith('blob:')) URL.revokeObjectURL(uploadedImageUrl);
     };
   }, [uploadedImageUrl]);
+
+  useEffect(() => () => {
+    if (uploadedVideoUrl) URL.revokeObjectURL(uploadedVideoUrl);
+  }, [uploadedVideoUrl]);
 
   // NOTE: this preview canvas is intentionally kept at 600px wide for smooth
   // live typing/sticker updates. The FULL-RESOLUTION export happens separately
@@ -103,6 +108,8 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
       setError(null);
       setPostType('reel');
       setUploadedVideoFile(file);
+      if (uploadedVideoUrl) URL.revokeObjectURL(uploadedVideoUrl);
+      setUploadedVideoUrl(URL.createObjectURL(file));
       setUploadedImageUrl(null);
       e.target.value = '';
       return;
@@ -116,6 +123,8 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
     setError(null);
     setPostType('image');
     setUploadedVideoFile(null);
+    if (uploadedVideoUrl) URL.revokeObjectURL(uploadedVideoUrl);
+    setUploadedVideoUrl(null);
     // Route through the crop modal first, rather than using the photo as-is.
     setPendingCropUrl(URL.createObjectURL(file));
     e.target.value = '';
@@ -235,7 +244,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
         <div className="relative w-full rounded-xl overflow-hidden bg-[#0A0A0A] border border-[#27272A]">
           {uploadedVideoFile ? (
             <video
-              src={URL.createObjectURL(uploadedVideoFile)}
+              src={uploadedVideoUrl || undefined}
               className="w-full h-auto block max-h-[420px] object-contain mx-auto"
               controls
               muted
@@ -260,7 +269,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
 
       <div className="space-y-2">
         <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider block">
-          1. Add Your Photo or Pick a Template
+          1. Add a Photo or Video from Your Device
         </span>
 
         <input
@@ -275,7 +284,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
           className="w-full flex items-center justify-center space-x-2 py-3 rounded-xl bg-[#E6FF00]/10 border-2 border-dashed border-[#E6FF00]/50 text-[#E6FF00] font-bold text-xs hover:bg-[#E6FF00]/20 transition-colors"
         >
           <Upload className="w-4 h-4" />
-          <span>Upload Photo From Your Phone</span>
+          <span>Choose from phone storage</span>
         </button>
 
         <div className="flex items-center space-x-3 overflow-x-auto no-scrollbar py-1">

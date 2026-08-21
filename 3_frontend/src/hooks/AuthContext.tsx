@@ -11,7 +11,7 @@ import {
   User,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { auth, db, firebaseConfigured } from "../lib/firebase";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -32,22 +32,47 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(
+    firebaseConfigured ? null : ({
+      uid: "demo-user",
+      displayName: "MemeLord Prime",
+      photoURL: "",
+      email: "demo@sekaa.local",
+    } as User)
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!firebaseConfigured || !auth) {
+      setLoading(false);
+      return;
+    }
+
+    let settled = false;
+    const loadingTimeout = window.setTimeout(() => {
+      if (!settled) setLoading(false);
+    }, 8000);
+
     const unsub = onAuthStateChanged(auth, (user) => {
+      settled = true;
+      window.clearTimeout(loadingTimeout);
       setCurrentUser(user);
       setLoading(false);
     });
-    return unsub;
+    return () => {
+      settled = true;
+      window.clearTimeout(loadingTimeout);
+      unsub();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    if (!auth) throw new Error("Connect Firebase to sign in.");
     await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signUp = async (email: string, password: string, name: string, handle: string) => {
+    if (!auth) throw new Error("Connect Firebase to create an account.");
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
     await setDoc(doc(db, "users", cred.user.uid), {
@@ -55,11 +80,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handle,
       avatar: "",
       email,
+      bio: "",
+      badge: "",
+      rank: 0,
+      followerCount: 0,
+      followingCount: 0,
+      memeCount: 0,
+      totalLikes: 0,
       createdAt: serverTimestamp(),
     });
   };
 
   const signInWithGoogle = async () => {
+    if (!auth) throw new Error("Connect Firebase to sign in with Google.");
     const provider = new GoogleAuthProvider();
     const cred = await signInWithPopup(auth, provider);
     const userRef = doc(db, "users", cred.user.uid);
@@ -78,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (!auth) return;
     await fbSignOut(auth);
   };
 

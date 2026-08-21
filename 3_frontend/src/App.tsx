@@ -46,6 +46,8 @@ import { Creator, MemePost, StatusItem, Comment } from './types';
 import { loadMoreMemes, hasMoreMemes } from './lib/firestore/memes';
 import { subscribeToBlockedUsers, blockUser, reportContent } from './lib/firestore/moderation';
 import { ReportModal } from './components/ReportModal';
+import { firebaseConfigured } from './lib/firebase';
+import { INITIAL_CREATORS, INITIAL_MEMES, INITIAL_STATUSES } from './data/mockData';
 
 const EMPTY_CREATOR: Omit<Creator, 'id'> = {
   name: 'New User',
@@ -105,14 +107,33 @@ export default function App() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => subscribeToCreators(setCreators), []);
+  useEffect(() => {
+    if (!firebaseConfigured) {
+      setCreators(INITIAL_CREATORS);
+      return;
+    }
+    return subscribeToCreators(setCreators);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) { setFollowingIds(new Set()); return; }
     return subscribeToFollowing(currentUser.uid, setFollowingIds);
   }, [currentUser]);
 
-  useEffect(() => subscribeToMemes(setRawMemes), []);
+  useEffect(() => {
+    if (!firebaseConfigured) {
+      setRawMemes(INITIAL_MEMES.map(({ creator, ...meme }) => ({
+        ...meme,
+        createdAt: meme.createdAt,
+        likesCount: meme.likes,
+        commentsCount: meme.commentsCount,
+        sharesCount: meme.shares,
+        downloadsCount: meme.downloads,
+      })));
+      return;
+    }
+    return subscribeToMemes(setRawMemes);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) { setBlockedIds(new Set()); return; }
@@ -129,7 +150,18 @@ export default function App() {
     return subscribeToUserMemeSaves(currentUser.uid, setSavedMemeIds);
   }, [currentUser]);
 
-  useEffect(() => subscribeToActiveStatuses(setRawStatuses), []);
+  useEffect(() => {
+    if (!firebaseConfigured) {
+      setRawStatuses(INITIAL_STATUSES.map(({ timestamp, views, isViewed, isMine, ...status }) => ({
+        ...status,
+        createdAt: timestamp,
+        viewsCount: views,
+        isActive: true,
+      })));
+      return;
+    }
+    return subscribeToActiveStatuses(setRawStatuses);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) { setViewedStatusIds(new Set()); return; }
@@ -220,7 +252,13 @@ export default function App() {
   const getCreatorForUser = (): Creator => {
     if (!currentUser) return { id: '', ...EMPTY_CREATOR };
     const existing = creatorsMap.get(currentUser.uid);
-    if (existing) return existing;
+    if (existing) {
+      return {
+        id: currentUser.uid,
+        ...EMPTY_CREATOR,
+        ...existing,
+      };
+    }
     return {
       id: currentUser.uid,
       ...EMPTY_CREATOR,
