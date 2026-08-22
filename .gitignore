@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # --- Node / website (3_frontend) ---
 3_frontend/node_modules/
 3_frontend/dist/
@@ -33,3 +34,15 @@
 .env*
 
 sekaa-app-extracted/
+=======
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+.env
+>>>>>>> bd2ff0b80e595fcc8e8c5f445dcd0aed55a39ac5
