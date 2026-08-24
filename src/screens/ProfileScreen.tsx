@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Grid, Bookmark, Heart, Share2, Edit3, Trophy, Copy, MoreHorizontal } from 'lucide-react';
+import { Grid, Bookmark, Heart, Share2, Edit3, Trophy, Copy, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Creator, MemePost } from '../types';
 
 interface ProfileScreenProps {
@@ -8,6 +8,7 @@ interface ProfileScreenProps {
  savedMemes: MemePost[];
  likedMemes: MemePost[];
  onSelectMeme: (meme: MemePost) => void;
+ onDeleteMeme: (meme: MemePost) => Promise<void>;
 }
 type ProfileTab = 'my_memes' | 'saved' | 'liked';
 
@@ -17,8 +18,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  savedMemes,
  likedMemes,
  onSelectMeme,
+ onDeleteMeme,
 }) => {
  const [activeTab, setActiveTab] = useState<ProfileTab>('my_memes');
+ const [deletingMemeId, setDeletingMemeId] = useState<string | null>(null);
+ const [deleteError, setDeleteError] = useState<string | null>(null);
 
  // Helper for formatting stats into 1.2K / 3.4M format
  const formatNumber = (num: number) => {
@@ -38,6 +42,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  const handleShare = async () => {
  const profileUrl = `${window.location.origin}/profile/${user.handle}`;
  if (navigator.clipboard) await navigator.clipboard.writeText(profileUrl);
+ };
+
+ const handleDelete = async (meme: MemePost) => {
+  if (!window.confirm('Delete this meme permanently?')) return;
+  setDeletingMemeId(meme.id);
+  setDeleteError(null);
+  try {
+   await onDeleteMeme(meme);
+  } catch {
+   setDeleteError('Unable to delete this meme. Please try again.');
+  } finally {
+   setDeletingMemeId(null);
+  }
  };
 
  return (
@@ -165,6 +182,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
  {/* 3-Column Thumbnail Grid */}
  <div>
+ {deleteError && <p className="mb-3 text-center text-xs font-bold text-[#FF3366]">{deleteError}</p>}
  {activeList.length === 0 ? (
  <div className="text-center py-12 space-y-2">
  <span className="text-3xl text-[#E6FF00]">+</span>
@@ -189,6 +207,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
  alt={meme.caption}
  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
  />
+ {activeTab === 'my_memes' && (
+  <button
+   onClick={(event) => {
+      event.stopPropagation();
+      void handleDelete(meme);
+   }}
+   disabled={deletingMemeId === meme.id}
+   className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/75 text-white backdrop-blur-sm transition-colors hover:bg-[#FF3366] disabled:cursor-wait disabled:opacity-60"
+   title="Delete meme"
+  >
+   <Trash2 className="h-4 w-4" />
+  </button>
+ )}
  {/* Watermark Pill */}
  <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-xs px-1.5 py-0.5 rounded-full border border-[#E6FF00]/40 flex items-center space-x-0.5 pointer-events-none">
  <span className="text-[#FF3366] text-[9px] font-black"></span>

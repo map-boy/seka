@@ -19,6 +19,7 @@ import {
   subscribeToUserMemeLikes,
   subscribeToUserMemeSaves,
   createMeme,
+  deleteMeme,
   toggleLikeMeme,
   setMemeReaction,
   toggleSaveMeme,
@@ -253,6 +254,11 @@ export default function App() {
     setActiveTab('home');
   };
 
+  const handleDeleteMeme = async (meme: MemePost) => {
+    if (!requireAuth() || !currentUser || meme.creatorId !== currentUser.uid) return;
+    await deleteMeme(meme.id, meme.mediaUrl);
+  };
+
   const handleToggleFollow = (creatorId: string) => {
     if (!requireAuth() || !currentUser) return;
     toggleFollow(currentUser.uid, creatorId);
@@ -352,6 +358,7 @@ export default function App() {
             savedMemes={savedMemes}
             likedMemes={likedMemes}
             onSelectMeme={(m) => setWatermarkMeme(m)}
+            onDeleteMeme={handleDeleteMeme}
           />
         ) : (
           <AuthGate />
