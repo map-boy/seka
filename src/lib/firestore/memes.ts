@@ -1,6 +1,7 @@
 import {
  addDoc,
  collection,
+ deleteDoc,
  doc,
  onSnapshot,
  orderBy,
@@ -12,6 +13,8 @@ import {
  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { deleteObject, ref as storageRef } from "firebase/storage";
+import { storage } from "../firebase";
 import { MemePost, Category, PostType } from "../../types";
 
 // memes/{memeId} -> meme doc (no per-user isLiked/isSaved on the doc itself)
@@ -68,6 +71,14 @@ export async function createMeme(data: Omit<MemeDoc, "createdAt" | "likesCount" 
  sharesCount: 0,
  downloadsCount: 0,
  });
+}
+
+export async function deleteMeme(memeId: string, mediaUrl: string) {
+ await deleteDoc(doc(db, "memes", memeId));
+
+ try {
+  await deleteObject(storageRef(storage, mediaUrl));
+ } catch {}
 }
 
 function likeDocId(uid: string, memeId: string) {
