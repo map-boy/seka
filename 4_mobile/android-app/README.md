@@ -1,22 +1,26 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Seka Android app
 
-# Run and deploy your AI Studio app
+Kotlin + Jetpack Compose.
 
-This contains everything you need to run your app locally.
+## Run locally
 
-View your app in AI Studio: https://ai.studio/apps/c030a16b-546e-41b1-b187-b92200fa3761
+**Prerequisites:** [Android Studio](https://developer.android.com/studio)
 
-## Run Locally
+1. Open Android Studio, choose **Open**, and select this directory.
+2. Let Android Studio resolve the Gradle sync.
+3. Place `google-services.json` from the Firebase console in `app/` (not committed).
+4. Run the app on an emulator or a physical device.
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+From the command line:
 
+```bash
+./gradlew assembleDebug
+./gradlew testDebugUnitTest
+```
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
-7. If you have already published your app in AI Studio, please [request upload key reset](https://support.google.com/googleplay/android-developer/answer/9842756#zippy=%2Crequest-an-upload-key-reset) in Google Play Console.
+## Not yet wired
+
+The RAG features (semantic search, personalised feed, meme assistant) are
+implemented in [`2_backend/functions`](../../2_backend/functions/README.md) and
+wired into the website only. The callables are client-agnostic, so bringing them
+to Android is a client-side task.

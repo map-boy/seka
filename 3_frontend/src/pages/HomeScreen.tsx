@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Header } from '../components/Header';
 import { StatusRingRow } from '../components/StatusRingRow';
 import { MemeCard } from '../components/MemeCard';
 import { Category, MemePost, StatusItem } from '../types';
+import { useForYouFeed, useSemanticSearch } from '../hooks/useRag';
 
 interface HomeScreenProps {
   memes: MemePost[];
@@ -21,6 +22,9 @@ interface HomeScreenProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+  /** Personalised recommendations need a signed-in user to have taste data. */
+  personalizeFeed?: boolean;
+  onEnsureMemesLoaded?: (memeIds: string[]) => void;
 }
 
 type SubTab = 'for_you' | 'following' | 'trending';
@@ -46,38 +50,71 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onLoadMore,
   hasMore,
   loadingMore,
+  personalizeFeed = false,
+  onEnsureMemesLoaded,
 }) => {
   const [subTab, setSubTab] = useState<SubTab>('for_you');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  const filteredMemes = memes.filter((meme) => {
-    if (subTab === 'following' && !meme.creator.isFollowing && !meme.isMine) {
-      return false;
-    }
-    if (selectedCategory !== 'All' && selectedCategory !== 'For You' && meme.category !== selectedCategory) {
-      return false;
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchCaption = meme.caption.toLowerCase().includes(q);
-      const matchCreator = meme.creator.name.toLowerCase().includes(q) || meme.creator.handle.toLowerCase().includes(q);
-      const matchTag = meme.hashtags.some((t) => t.toLowerCase().includes(q));
-      if (!matchCaption && !matchCreator && !matchTag) return false;
-    }
-    return true;
-  });
+  // Sub-tab and category narrow the pool; search and ranking then order it.
+  const filteredMemes = useMemo(
+    () =>
+      memes.filter((meme) => {
+        if (subTab === 'following' && !meme.creator.isFollowing && !meme.isMine) {
+          return false;
+        }
+        if (selectedCategory !== 'All' && selectedCategory !== 'For You' && meme.category !== selectedCategory) {
+          return false;
+        }
+        return true;
+      }),
+    [memes, subTab, selectedCategory]
+  );
 
-  const displayedMemes = subTab === 'trending'
-    ? [...filteredMemes].sort((a, b) => (b.likes + b.shares * 2) - (a.likes + a.shares * 2)).slice(0, 20)
-    : filteredMemes;
+  const { results: searchResults, mode: searchMode } = useSemanticSearch(
+    filteredMemes,
+    searchQuery,
+    selectedCategory,
+    onEnsureMemesLoaded
+  );
+  const { results: forYouMemes, strategy } = useForYouFeed(
+    filteredMemes,
+    personalizeFeed && subTab === 'for_you',
+    selectedCategory,
+    onEnsureMemesLoaded
+  );
+
+  const displayedMemes = searchQuery.trim()
+    ? searchResults
+    : subTab === 'trending'
+      ? [...filteredMemes].sort((a, b) => (b.likes + b.shares * 2) - (a.likes + a.shares * 2)).slice(0, 20)
+      : subTab === 'for_you'
+        ? forYouMemes
+        : filteredMemes;
+
+  const feedNote = searchQuery.trim()
+    ? searchMode === 'loading'
+      ? 'Searching by meaning...'
+      : searchMode === 'semantic'
+        ? 'Ranked by meaning'
+        : 'Keyword match'
+    : subTab === 'for_you' && strategy === 'taste'
+      ? 'Picked from what you like and save'
+      : null;
 
   return (
     <div className="pb-24">
       <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} showSearch={showSearch} setShowSearch={setShowSearch} />
 
       <StatusRingRow statuses={statuses} onSelectStatus={onSelectStatus} onAddStatusClick={onAddStatusClick} />
+
+      {feedNote && (
+        <div className="px-4 py-1.5 bg-[#0A0A0A] text-[10px] font-bold uppercase tracking-wider text-[#71717A]">
+          {feedNote}
+        </div>
+      )}
 
       <div className="flex border-b border-[#27272A] bg-[#0A0A0A]">
         <button

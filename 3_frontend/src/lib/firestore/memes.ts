@@ -13,6 +13,7 @@ import {
   updateDoc,
   increment,
   where,
+  documentId,
   QueryDocumentSnapshot,
   DocumentData,
 } from "firebase/firestore";
@@ -94,6 +95,34 @@ export function subscribeToUserMemeSaves(uid: string, cb: (saved: Set<string>) =
   return onSnapshot(q, (snap) => {
     cb(new Set(snap.docs.map((d) => d.data().memeId as string)));
   });
+}
+
+// Firestore caps an "in" query at 30 values.
+const ID_QUERY_CHUNK = 30;
+
+/**
+ * Fetches specific memes by id, regardless of which page they fall on.
+ *
+ * Retrieval (search, recommendations, assistant sources) returns ids from the
+ * whole index, but the feed only holds the pages loaded so far -- without this,
+ * a match on an unloaded page would silently disappear from the results.
+ */
+export async function fetchMemesByIds(ids: string[]): Promise<(MemeDoc & { id: string })[]> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return [];
+
+  const chunks: string[][] = [];
+  for (let i = 0; i < unique.length; i += ID_QUERY_CHUNK) {
+    chunks.push(unique.slice(i, i + ID_QUERY_CHUNK));
+  }
+
+  const snapshots = await Promise.all(
+    chunks.map((chunk) => getDocs(query(collection(db, "memes"), where(documentId(), "in", chunk))))
+  );
+
+  return snapshots.flatMap((snap) =>
+    snap.docs.map((d) => ({ id: d.id, ...(d.data() as MemeDoc) }))
+  );
 }
 
 export async function createMeme(data: Omit<MemeDoc, "createdAt" | "likesCount" | "commentsCount" | "sharesCount" | "downloadsCount">) {

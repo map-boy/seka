@@ -62,6 +62,13 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // memeEmbeddings/{memeId} - RAG vectors, written only by Cloud Functions.
+    // The Admin SDK bypasses these rules, so denying every client read and write
+    // keeps the index off the browser; retrieval happens server-side.
+    match /memeEmbeddings/{memeId} {
+      allow read, write: if false;
+    }
+
     // statuses/{statusId}
     match /statuses/{statusId} {
       allow read: if true;

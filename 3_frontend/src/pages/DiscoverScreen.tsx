@@ -1,6 +1,7 @@
-﻿import React, { useState } from 'react';
-import { Search, Trophy, Flame, UserPlus, UserCheck } from 'lucide-react';
+﻿import React, { useMemo, useState } from 'react';
+import { Search, Trophy, Flame, UserPlus, UserCheck, Sparkles } from 'lucide-react';
 import { Creator, MemePost } from '../types';
+import { useSemanticSearch } from '../hooks/useRag';
 
 interface DiscoverScreenProps {
  creators: Creator[];
@@ -8,6 +9,8 @@ interface DiscoverScreenProps {
  onToggleFollow: (creatorId: string) => void;
  onSelectMeme: (meme: MemePost) => void;
  onCreatorClick: (creatorId: string) => void;
+ onOpenAssistant?: () => void;
+ onEnsureMemesLoaded?: (memeIds: string[]) => void;
 }
 
 const TRENDING_TAGS = ['#TechHumor', '#CatMeme', '#Relatable', '#DevLife', '#AnimeMemes', '#Gaming3AM', '#DankSekaa'];
@@ -18,23 +21,32 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  onToggleFollow,
  onSelectMeme,
  onCreatorClick,
+ onOpenAssistant,
+ onEnsureMemesLoaded,
 }) => {
  const [searchQuery, setSearchQuery] = useState('');
+ const isSearching = searchQuery.trim().length > 0;
 
  // 24H Virality Rank calculation: likes + shares*2 + downloads*3
- const rankedMemes = [...memes].sort((a, b) => {
+ const rankedMemes = useMemo(
+ () =>
+ [...memes].sort((a, b) => {
  const scoreA = a.likes + a.shares * 2 + a.downloads * 3;
  const scoreB = b.likes + b.shares * 2 + b.downloads * 3;
  return scoreB - scoreA;
- });
-
- const filteredRankedMemes = rankedMemes.filter((m) =>
- searchQuery
- ? m.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
- m.creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- m.hashtags.some((h) => h.toLowerCase().includes(searchQuery.toLowerCase()))
- : true
+ }),
+ [memes]
  );
+
+ // With a query the grid is a search result ordered by relevance; without one it
+ // stays the 24h virality leaderboard.
+ const { results: searchResults, mode: searchMode } = useSemanticSearch(
+ memes,
+ searchQuery,
+ undefined,
+ onEnsureMemesLoaded
+ );
+ const filteredRankedMemes = isSearching ? searchResults : rankedMemes;
 
  return (
  <div className="pb-24 pt-4 px-4 space-y-6 max-w-lg mx-auto">
@@ -45,16 +57,37 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  <h1 className="text-xl font-black text-white">Discover & 24h Rank</h1>
  </div>
 
- <div className="relative">
+ <div className="flex items-center space-x-2">
+ <div className="relative flex-1">
  <input
  type="text"
- placeholder="Search memes, tags, creators..."
+ placeholder="Describe a meme, mood, tag or creator..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
  className="w-full bg-[#18181B] text-white text-xs pl-9 pr-4 py-3 rounded-full border border-[#27272A] focus:outline-none focus:border-[#E6FF00] shadow-md"
  />
  <Search className="w-4 h-4 text-[#A1A1AA] absolute left-3 top-3.5" />
  </div>
+ {onOpenAssistant && (
+ <button
+ onClick={onOpenAssistant}
+ aria-label="Ask the meme assistant"
+ className="w-11 h-11 flex-shrink-0 rounded-full bg-[#E6FF00] text-[#0A0A0A] flex items-center justify-center shadow-[0_0_12px_rgba(230,255,0,0.35)]"
+ >
+ <Sparkles className="w-4 h-4" />
+ </button>
+ )}
+ </div>
+
+ {isSearching && (
+ <span className="text-[10px] font-bold uppercase tracking-wider text-[#71717A]">
+ {searchMode === 'loading'
+ ? 'Searching by meaning...'
+ : searchMode === 'semantic'
+ ? `Ranked by meaning - ${filteredRankedMemes.length} match${filteredRankedMemes.length === 1 ? '' : 'es'}`
+ : `Keyword match - ${filteredRankedMemes.length} result${filteredRankedMemes.length === 1 ? '' : 's'}`}
+ </span>
+ )}
  </div>
 
  {/* Trending Hashtag Chips */}
@@ -132,7 +165,9 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  <div className="space-y-3">
  <div className="flex items-center justify-between">
  <div className="flex items-center space-x-2">
- <span className="text-[#E6FF00] font-black text-sm">🏆 24H VIRALITY RANK</span>
+ <span className="text-[#E6FF00] font-black text-sm">
+ {isSearching ? '🔎 SEARCH RESULTS' : '🏆 24H VIRALITY RANK'}
+ </span>
  </div>
  <span className="text-[10px] text-[#A1A1AA] font-bold uppercase">score = likes + sharesÃƒâ€”2 + downloadsÃƒâ€”3</span>
  </div>
@@ -140,6 +175,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  <div className="grid grid-cols-2 gap-3">
  {filteredRankedMemes.map((meme, idx) => {
  const rank = idx + 1;
+ const showRank = !isSearching;
  const badgeEmoji = rank === 1 ? 'Ã°Å¸Â¥â€¡' : rank === 2 ? 'Ã°Å¸Â¥Ë†' : rank === 3 ? 'Ã°Å¸Â¥â€°' : `#${rank}`;
 
  return (
@@ -157,6 +193,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  />
 
  {/* Rank Badge */}
+ {showRank && (
  <div
  className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-black shadow-lg ${
  rank <= 3
@@ -166,6 +203,7 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  >
  {badgeEmoji}
  </div>
+ )}
 
  {/* Watermark Pill */}
  <div className="absolute bottom-1.5 right-1.5 bg-black/80 backdrop-blur-xs px-1.5 py-0.5 rounded-full border border-[#E6FF00]/30 flex items-center space-x-0.5">

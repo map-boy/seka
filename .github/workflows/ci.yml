@@ -31,6 +31,33 @@ jobs:
       - name: Build
         run: npm run build
 
+  rag-backend:
+    name: RAG backend (Cloud Functions)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 2_backend/functions
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 2_backend/functions/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
   android:
     name: Android app build
     runs-on: ubuntu-latest

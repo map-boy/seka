@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { TabType, BottomNav } from './components/BottomNav';
 import { HomeScreen } from './pages/HomeScreen';
 import { DiscoverScreen } from './pages/DiscoverScreen';
@@ -13,6 +13,7 @@ import { EmojiReactionPicker } from './components/EmojiReactionPicker';
 import { CommentSheet } from './components/CommentSheet';
 import { StatusViewer } from './components/StatusViewer';
 import { MemeTray } from './components/MemeTray';
+import { MemeAssistant } from './components/MemeAssistant';
 
 import {
   subscribeToMemes,
@@ -43,7 +44,7 @@ import {
   StatusDoc,
 } from './lib/firestore/statuses';
 import { Creator, MemePost, StatusItem, Comment } from './types';
-import { loadMoreMemes, hasMoreMemes } from './lib/firestore/memes';
+import { loadMoreMemes, hasMoreMemes, fetchMemesByIds } from './lib/firestore/memes';
 import { subscribeToBlockedUsers, blockUser, reportContent } from './lib/firestore/moderation';
 import { ReportModal } from './components/ReportModal';
 import { firebaseConfigured } from './lib/firebase';
@@ -100,6 +101,7 @@ export default function App() {
   const [commentMeme, setCommentMeme] = useState<MemePost | null>(null);
   const [activeStatus, setActiveStatus] = useState<StatusItem | null>(null);
   const [isMemeTrayOpen, setIsMemeTrayOpen] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [selectedMemeForChat, setSelectedMemeForChat] = useState<MemePost | null>(null);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [reportTarget, setReportTarget] = useState<MemePost | null>(null);
@@ -350,6 +352,35 @@ export default function App() {
     setLoadingMore(false);
   };
 
+  // Retrieval returns ids from the whole index, but the feed only holds the pages
+  // loaded so far. Pulling the missing ones in keeps a match on page 5 visible.
+  const knownMemeIdsRef = useRef<Set<string>>(new Set());
+  knownMemeIdsRef.current = new Set([...rawMemes, ...extraMemes].map((m) => m.id));
+  const inFlightMemeIdsRef = useRef<Set<string>>(new Set());
+
+  const ensureMemesLoaded = useCallback(async (ids: string[]) => {
+    if (!firebaseConfigured) return;
+    const missing = ids.filter(
+      (id) => !knownMemeIdsRef.current.has(id) && !inFlightMemeIdsRef.current.has(id)
+    );
+    if (missing.length === 0) return;
+
+    missing.forEach((id) => inFlightMemeIdsRef.current.add(id));
+    try {
+      const fetched = await fetchMemesByIds(missing);
+      if (fetched.length > 0) {
+        setExtraMemes((prev) => {
+          const seen = new Set(prev.map((m) => m.id));
+          return [...prev, ...fetched.filter((m) => !seen.has(m.id))];
+        });
+      }
+    } catch {
+      // A failed top-up just means those results stay hidden this round.
+    } finally {
+      missing.forEach((id) => inFlightMemeIdsRef.current.delete(id));
+    }
+  }, []);
+
   const handleReportMeme = async (reason: string) => {
     if (!currentUser || !reportTarget) return;
     await reportContent(currentUser.uid, 'meme', reportTarget.id, reason);
@@ -392,6 +423,8 @@ export default function App() {
           onLoadMore={handleLoadMore}
           hasMore={hasMore}
           loadingMore={loadingMore}
+          personalizeFeed={!!currentUser}
+          onEnsureMemesLoaded={ensureMemesLoaded}
         />
       )}
 
@@ -402,6 +435,10 @@ export default function App() {
           onToggleFollow={handleToggleFollow}
           onSelectMeme={(m) => setWatermarkMeme(m)}
           onCreatorClick={() => setActiveTab('profile')}
+          onOpenAssistant={() => {
+            if (requireAuth()) setIsAssistantOpen(true);
+          }}
+          onEnsureMemesLoaded={ensureMemesLoaded}
         />
       )}
 
@@ -500,6 +537,14 @@ export default function App() {
         memes={memes}
         savedMemes={savedMemes}
         onSelectMeme={(meme) => { setSelectedMemeForChat(meme); setIsMemeTrayOpen(false); }}
+      />
+
+      <MemeAssistant
+        isOpen={isAssistantOpen}
+        memes={memes}
+        onClose={() => setIsAssistantOpen(false)}
+        onSelectMeme={(meme) => { setIsAssistantOpen(false); setWatermarkMeme(meme); }}
+        onEnsureMemesLoaded={ensureMemesLoaded}
       />
 
       {reportTarget && (
