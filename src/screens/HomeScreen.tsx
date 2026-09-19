@@ -16,6 +16,7 @@ interface HomeScreenProps {
  onSelectStatus: (status: StatusItem) => void;
  onAddStatusClick: () => void;
  onCreatorClick: (creatorId: string) => void;
+ onDeleteMeme: (meme: MemePost) => Promise<void>;
 }
 
 type SubTab = 'for_you' | 'following' | 'trending';
@@ -45,6 +46,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
  onSelectStatus,
  onAddStatusClick,
  onCreatorClick,
+ onDeleteMeme,
 }) => {
  const [subTab, setSubTab] = useState<SubTab>('for_you');
  const [selectedCategory, setSelectedCategory] = useState<Category>('All');
@@ -180,6 +182,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
  onSaveClick={onSaveClick}
  onLongPress={onLongPress}
  onCreatorClick={onCreatorClick}
+ onDeleteMeme={onDeleteMeme}
  />
  ))
  )}
