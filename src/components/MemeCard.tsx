@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef } from 'react';
-import { Heart, MessageCircle, Share2, Download, Bookmark, Volume2, VolumeX, Play } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Download, Bookmark, Volume2, VolumeX, Play, Trash2 } from 'lucide-react';
 import { MemePost } from '../types';
 
 interface MemeCardProps {
@@ -11,6 +11,7 @@ interface MemeCardProps {
  onSaveClick: (id: string) => void;
  onLongPress: (meme: MemePost) => void;
  onCreatorClick?: (creatorId: string) => void;
+ onDeleteMeme?: (meme: MemePost) => Promise<void>;
 }
 
 export const MemeCard: React.FC<MemeCardProps> = ({
@@ -22,9 +23,11 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  onSaveClick,
  onLongPress,
  onCreatorClick,
+ onDeleteMeme,
 }) => {
  const [isMuted, setIsMuted] = useState(true);
  const [showHeartAnim, setShowHeartAnim] = useState(false);
+ const [isDeleting, setIsDeleting] = useState(false);
  const lastTapRef = useRef<number>(0);
  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -57,7 +60,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  };
 
  return (
- <article className="relative mb-2 min-h-[calc(100svh-13.5rem)] snap-start overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#18181B] shadow-2xl">
+ <article className="relative mb-2 h-[min(calc(100svh-13.5rem),720px)] min-h-[480px] snap-start overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#18181B] shadow-2xl">
  {/* Creator overlay */}
  <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/75 to-transparent p-4 pb-12">
  <div
@@ -82,15 +85,35 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  </div>
  </div>
 
- {/* Category Pill */}
+ <div className="flex items-center gap-2">
  <span className="rounded-full border border-white/20 bg-black/45 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-md">
  {meme.category}
  </span>
+ {meme.isMine && onDeleteMeme && (
+ <button
+ onClick={async (event) => {
+ event.stopPropagation();
+ if (!window.confirm('Delete this meme permanently?')) return;
+ setIsDeleting(true);
+ try {
+ await onDeleteMeme(meme);
+ } finally {
+ setIsDeleting(false);
+ }
+ }}
+ disabled={isDeleting}
+ className="flex h-8 w-8 items-center justify-center rounded-full border border-[#FF3366]/60 bg-black/60 text-[#FF3366] backdrop-blur-md transition-colors hover:bg-[#FF3366] hover:text-white disabled:cursor-wait disabled:opacity-60"
+ title="Delete meme"
+ >
+ <Trash2 className="h-4 w-4" />
+ </button>
+ )}
+ </div>
  </div>
 
  {/* Media Area */}
  <div
- className="relative h-full min-h-[calc(100svh-13.5rem)] cursor-pointer select-none overflow-hidden bg-[#0A0A0A]"
+ className="absolute inset-0 h-full min-h-0 cursor-pointer select-none overflow-hidden bg-[#0A0A0A]"
  onClick={handleMediaClick}
  onMouseDown={handleTouchStart}
  onMouseUp={handleTouchEnd}
@@ -100,7 +123,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  {meme.type === 'reel' ? (
  <video
  src={meme.mediaUrl}
- className="h-full w-full object-cover"
+ className="h-full w-full object-contain"
  autoPlay
  loop
  muted={isMuted}
@@ -110,7 +133,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
  <img
  src={meme.mediaUrl}
  alt={meme.caption}
- className="h-full w-full object-cover"
+ className="h-full w-full object-contain"
  loading="lazy"
  />
  )}

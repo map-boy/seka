@@ -231,9 +231,9 @@ export default function App() {
     toggleLikeComment(currentUser.uid, commentId);
   };
 
-  const handlePublishMeme = (newPost: MemePost, postToStatus: boolean) => {
+  const handlePublishMeme = async (newPost: MemePost, postToStatus: boolean) => {
     if (!requireAuth() || !currentUser) return;
-    createMeme({
+    await createMeme({
       creatorId: currentUser.uid,
       category: newPost.category,
       type: newPost.type,
@@ -243,7 +243,7 @@ export default function App() {
       hashtags: newPost.hashtags,
     });
     if (postToStatus) {
-      createStatus({
+      await createStatus({
         creatorId: currentUser.uid,
         creatorName: 'My Status',
         creatorAvatar: user.avatar,
@@ -309,6 +309,7 @@ export default function App() {
           onSelectStatus={handleSelectStatus}
           onAddStatusClick={() => setActiveTab('create')}
           onCreatorClick={() => setActiveTab('profile')}
+          onDeleteMeme={handleDeleteMeme}
         />
       )}
 

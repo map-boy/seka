@@ -3,11 +3,12 @@ import { Sparkles, Video, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { Category, MemeTemplate, MemePost, PostType } from '../types';
 import { INITIAL_TEMPLATES } from '../data/mockData';
 import { stampSekaaWatermark } from '../utils/watermark';
+import { getVideoDuration, MAX_VIDEO_DURATION_SECONDS, splitVideoFile } from '../utils/video';
 import { uploadMemeImage, uploadMemeFile } from '../lib/storage';
 import { useAuth } from '../lib/AuthContext';
 
 interface CreateMemeStudioProps {
-  onPublish: (newPost: MemePost, postToStatus: boolean) => void;
+  onPublish: (newPost: MemePost, postToStatus: boolean) => Promise<void>;
 }
 
 const CATEGORIES: Category[] = [
@@ -16,12 +17,20 @@ const CATEGORIES: Category[] = [
 
 const EMOJI_STICKERS = ['🔥', '💀', '😂', '👑', '🕶️', '🗿', '🤡', '🚀'];
 
+function formatDuration(seconds: number): string {
+  const roundedSeconds = Math.max(0, Math.round(seconds));
+  const minutes = Math.floor(roundedSeconds / 60);
+  return `${minutes}:${String(roundedSeconds % 60).padStart(2, '0')}`;
+}
+
 export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish }) => {
   const { currentUser } = useAuth();
   const [postType, setPostType] = useState<PostType>('image');
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(INITIAL_TEMPLATES[0]);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [topCaption, setTopCaption] = useState(INITIAL_TEMPLATES[0].defaultTopText);
   const [bottomCaption, setBottomCaption] = useState(INITIAL_TEMPLATES[0].defaultBottomText);
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
@@ -32,6 +41,16 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!uploadedVideoFile) {
+      setVideoPreviewUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(uploadedVideoFile);
+    setVideoPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [uploadedVideoFile]);
 
   // Source image for the canvas: an uploaded phone photo takes priority over a template
   const activeImageSrc = uploadedVideoFile ? '' : (uploadedImageUrl || selectedTemplate?.thumbnailUrl || '');
@@ -95,11 +114,20 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
     if (!file) return;
 
     if (file.type.startsWith('video/')) {
-      setError(null);
-      setPostType('reel');
-      setUploadedVideoFile(file);
-      setUploadedImageUrl(null);
-      e.target.value = '';
+      void getVideoDuration(file).then((duration) => {
+        if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
+        setError(duration > MAX_VIDEO_DURATION_SECONDS
+          ? `This video is ${formatDuration(duration)} and will be divided into 10-minute parts.`
+          : null);
+        setVideoDuration(duration);
+        setPostType('reel');
+        setUploadedVideoFile(file);
+        setUploadedImageUrl(null);
+        e.target.value = '';
+      }).catch(() => {
+        setError('The video could not be read. Please choose another video.');
+        e.target.value = '';
+      });
       return;
     }
     if (!file.type.startsWith('image/')) {
@@ -110,7 +138,9 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
 
     setError(null);
     setPostType('image');
+    if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
     setUploadedVideoFile(null);
+    setVideoDuration(null);
     setUploadedImageUrl(URL.createObjectURL(file));
     e.target.value = '';
   };
@@ -118,10 +148,12 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
   const handleRemoveUpload = () => {
     if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
     setUploadedImageUrl(null);
+    setUploadedVideoFile(null);
+    setVideoDuration(null);
   };
 
   const handleSelectTemplate = (tpl: MemeTemplate) => {
-    if (uploadedImageUrl) handleRemoveUpload();
+    if (uploadedImageUrl || uploadedVideoFile) handleRemoveUpload();
     setSelectedTemplate(tpl);
     setTopCaption(tpl.defaultTopText);
     setBottomCaption(tpl.defaultBottomText);
@@ -138,11 +170,20 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
     setPublishing(true);
     setError(null);
     try {
-      const realMediaUrl = uploadedVideoFile
-        ? await uploadMemeFile(currentUser.uid, uploadedVideoFile)
-        : await uploadMemeImage(currentUser.uid, canvasRef.current!.toDataURL('image/png'));
+      const videoParts = uploadedVideoFile
+        ? await splitVideoFile(uploadedVideoFile, (completed, total) => {
+          setError(`Dividing video into parts (${completed}/${total})...`);
+        })
+        : [];
+      const filesToUpload = uploadedVideoFile ? videoParts : [null];
 
-      const newPost: MemePost = {
+      for (let partIndex = 0; partIndex < filesToUpload.length; partIndex += 1) {
+        const videoPart = filesToUpload[partIndex];
+        const realMediaUrl = videoPart
+          ? await uploadMemeFile(currentUser.uid, videoPart)
+          : await uploadMemeImage(currentUser.uid, canvasRef.current!.toDataURL('image/png'));
+        const partLabel = filesToUpload.length > 1 ? ` (Part ${partIndex + 1} of ${filesToUpload.length})` : '';
+        const newPost: MemePost = {
         id: `pending_${Date.now()}`,
         creatorId: currentUser.uid,
         creator: {
@@ -163,8 +204,8 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
         category,
         type: postType,
         mediaUrl: realMediaUrl,
-        duration: postType === 'reel' ? '0:12' : undefined,
-        caption: `${topCaption} ${bottomCaption}`.trim(),
+        duration: postType === 'reel' ? formatDuration(videoPart ? Math.min(MAX_VIDEO_DURATION_SECONDS, (videoDuration || 0) - partIndex * MAX_VIDEO_DURATION_SECONDS) : 0) : undefined,
+        caption: `${topCaption} ${bottomCaption}`.trim() + partLabel,
         hashtags: [`#${category}`, '#SekaaOriginal', '#DankMemes'],
         likes: 0,
         commentsCount: 0,
@@ -175,7 +216,8 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
         isMine: true,
       };
 
-      onPublish(newPost, postToStatus);
+        await onPublish(newPost, postToStatus && partIndex === 0);
+      }
     } catch (err: any) {
       setError(err.message || 'Upload failed. Please try again.');
     } finally {
@@ -196,11 +238,11 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
       </div>
 
       <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-3 shadow-xl">
-        <div className="relative w-full rounded-xl overflow-hidden bg-[#0A0A0A] border border-[#27272A]">
+        <div className="relative h-[min(60svh,420px)] w-full overflow-hidden rounded-xl border border-[#27272A] bg-[#0A0A0A]">
           {uploadedVideoFile ? (
             <video
-              src={URL.createObjectURL(uploadedVideoFile)}
-              className="w-full h-auto block max-h-[420px] object-contain mx-auto"
+              src={videoPreviewUrl || undefined}
+              className="block h-full w-full object-contain"
               controls
               muted
             />
@@ -208,7 +250,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
             <canvas ref={canvasRef} className="w-full h-auto block max-h-[420px] object-contain mx-auto" />
           )}
           <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/70 text-[#E6FF00] px-2 py-0.5 rounded-full border border-[#E6FF00]/30">
-            Live Canvas Preview
+            {uploadedVideoFile && videoDuration ? `Video ${formatDuration(videoDuration)}` : 'Live Canvas Preview'}
           </span>
           {uploadedImageUrl && (
             <button
@@ -239,7 +281,7 @@ export const CreateMemeStudio: React.FC<CreateMemeStudioProps> = ({ onPublish })
           className="w-full flex items-center justify-center space-x-2 py-3 rounded-xl bg-[#E6FF00]/10 border-2 border-dashed border-[#E6FF00]/50 text-[#E6FF00] font-bold text-xs hover:bg-[#E6FF00]/20 transition-colors"
         >
           <Upload className="w-4 h-4" />
-          <span>Upload Photo From Your Phone</span>
+          <span>Upload Photo or Video</span>
         </button>
 
         <div className="flex items-center space-x-3 overflow-x-auto no-scrollbar py-1">
