@@ -22,7 +22,6 @@ export const WatermarkDialog: React.FC<WatermarkDialogProps> = ({ meme, onClose 
  // Prepare watermarked image composite using real HTML5 canvas
  createWatermarkedCanvas({
  sourceImageUrl: meme.mediaUrl,
- topText: meme.caption.length > 30 ? '' : meme.caption,
  }).then((dataUrl) => {
  setGeneratedDataUrl(dataUrl);
  });
@@ -72,9 +71,9 @@ export const WatermarkDialog: React.FC<WatermarkDialogProps> = ({ meme, onClose 
  </div>
 
  <div className="space-y-1">
- <h3 className="text-base font-black text-white">Watermarking with Sekaa...</h3>
+ <h3 className="text-base font-black text-white">Preparing your meme...</h3>
  <p className="text-xs text-[#A1A1AA]">
- Stamping official Sekaa badge onto bottom-right corner
+ Getting the full picture ready
  </p>
  </div>
 
@@ -95,9 +94,9 @@ export const WatermarkDialog: React.FC<WatermarkDialogProps> = ({ meme, onClose 
  </div>
 
  <div className="space-y-1">
- <h3 className="text-lg font-black text-white">Export Complete!</h3>
+ <h3 className="text-lg font-black text-white">Ready!</h3>
  <p className="text-xs font-bold text-[#E6FF00]">
- Saved to Gallery with Sekaa Watermark!
+ Ready to save!
  </p>
  </div>
 

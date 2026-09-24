@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Sekaa Real Canvas Watermarking Engine & Export Utility
  * Handles client-side canvas compositing of text, stickers, and the official Sekaa watermark stamp.
  */
@@ -69,9 +69,6 @@ export async function createWatermarkedCanvas(options: CompositeOptions): Promis
  ctx.textBaseline = 'middle';
  ctx.fillText(sticker, canvas.width / 2, canvas.height / 2);
  }
-
- // 4. Stamp Official Sekaa Watermark Badge (bottom-right)
- stampSekaaWatermark(ctx, canvas.width, canvas.height);
 
  // Export as PNG
  resolve(canvas.toDataURL('image/png'));

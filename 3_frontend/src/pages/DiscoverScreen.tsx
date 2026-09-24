@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Search, Trophy, Flame, UserPlus, UserCheck } from 'lucide-react';
 import { Creator, MemePost } from '../types';
 
@@ -165,12 +165,6 @@ export const DiscoverScreen: React.FC<DiscoverScreenProps> = ({
  }`}
  >
  {badgeEmoji}
- </div>
-
- {/* Watermark Pill */}
- <div className="absolute bottom-1.5 right-1.5 bg-black/80 backdrop-blur-xs px-1.5 py-0.5 rounded-full border border-[#E6FF00]/30 flex items-center space-x-0.5">
- <span className="text-[#FF3366] text-[9px] font-black"></span>
- <span className="text-[8px] font-bold text-white">Sekaa</span>
  </div>
  </div>
 

@@ -128,7 +128,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({
 
       <div
         className={`relative bg-[#0A0A0A] overflow-hidden cursor-pointer select-none ${
-          meme.type === 'reel' ? 'aspect-[4/5]' : 'aspect-[4/3]'
+          meme.type === 'reel' ? 'aspect-[4/5]' : 'min-h-[220px]'
         }`}
         onClick={handleMediaClick}
         onMouseDown={handleTouchStart}
@@ -137,9 +137,9 @@ export const MemeCard: React.FC<MemeCardProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {meme.type === 'reel' ? (
-          <video src={meme.mediaUrl} className="w-full h-full object-cover" autoPlay loop muted={isMuted} playsInline />
+          <video src={meme.mediaUrl} className="w-full h-full object-contain" autoPlay loop muted={isMuted} playsInline />
         ) : (
-          <img src={meme.mediaUrl} alt={meme.caption} className="w-full h-full object-cover" loading="lazy" />
+          <img src={meme.mediaUrl} alt={meme.caption} className="block h-auto max-h-[80svh] w-full object-contain" loading="lazy" onError={(e) => { e.currentTarget.closest('article')?.classList.add('hidden'); }} />
         )}
 
         {meme.type === 'reel' && (
@@ -163,11 +163,6 @@ export const MemeCard: React.FC<MemeCardProps> = ({
             <Heart className="w-24 h-24 text-[#E6FF00] fill-[#E6FF00] drop-shadow-[0_0_25px_rgba(230,255,0,0.8)]" />
           </div>
         )}
-
-        <div className="absolute bottom-3 right-3 bg-[#0A0A0A]/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#E6FF00]/40 flex items-center space-x-1 shadow-md pointer-events-none">
-          <span className="text-[#FF3366] text-xs font-black">⚡</span>
-          <span className="text-xs font-black text-white">Sekaa</span>
-        </div>
       </div>
 
       <div className="p-3 space-y-1.5">
@@ -218,10 +213,10 @@ export const MemeCard: React.FC<MemeCardProps> = ({
           <button
             onClick={() => onDownloadClick(meme)}
             className="flex items-center space-x-1 bg-[#FF9500]/15 hover:bg-[#FF9500]/25 text-[#FF9500] border border-[#FF9500]/40 px-2.5 py-1 rounded-full text-xs font-bold transition-all"
-            title="Download with Sekaa Watermark"
+            title="Download"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Watermark</span>
+            <span className="hidden sm:inline">Save</span>
           </button>
 
           <button

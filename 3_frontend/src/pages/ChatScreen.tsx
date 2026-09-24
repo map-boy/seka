@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Send, Users, Zap, Plus } from 'lucide-react';
 import { MemePost, Creator } from '../types';
 import { useAuth } from '../hooks/AuthContext';
@@ -214,7 +214,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                     <img
                       src={selectedMemeForChat.mediaUrl}
                       alt={selectedMemeForChat.caption}
-                      className="w-full h-auto object-cover max-h-56"
+                      className="w-full h-auto object-contain max-h-56"
                     />
                   </div>
                 )}
